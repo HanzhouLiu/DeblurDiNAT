@@ -1,0 +1,44 @@
+---
+experiment_desc: FSformer_pretrained
+
+train:
+  files_a: /mnt/g/RESEARCH/PHD/Motion_Deblurred/datasets/GOPRO/train/trainA/*.png
+  #files_a: /scratch/user/hanzhou1996/datasets/deblur/GOPRO/train/trainA/*.png
+  files_b: /mnt/g/RESEARCH/PHD/Motion_Deblurred/datasets/GOPRO/train/trainB/*.png
+  #files_b: /scratch/user/hanzhou1996/datasets/deblur/GOPRO/train/trainB/*.png
+  size: &SIZE 256
+  crop: random
+  preload: &PRELOAD false
+  preload_size: &PRELOAD_SIZE 0
+  bounds: [0, 1]
+  scope: geometric
+
+val:
+  files_a: /mnt/g/RESEARCH/PHD/Motion_Deblurred/datasets/GOPRO/test/testA/*.png
+  #files_a: /scratch/user/hanzhou1996/datasets/deblur/GOPRO/test/testA/*.png
+  files_b: /mnt/g/RESEARCH/PHD/Motion_Deblurred/datasets/GOPRO/test/testB/*.png
+  #files_b: /scratch/user/hanzhou1996/datasets/deblur/GOPRO/test/testB/*.png
+  size: *SIZE
+  scope: None
+  crop: random
+  preload: *PRELOAD
+  preload_size: *PRELOAD_SIZE
+  bounds: [0, 1]
+
+model:
+  g_name: FSformer
+  content_loss: Stripformer_Loss
+
+num_epochs: 3000
+train_batches_per_epoch: 2103
+val_batches_per_epoch: 1111
+batch_size: 4
+image_size: [256, 256]
+
+optimizer:
+  name: adam
+  lr: 0.0001
+scheduler:
+  name: cosine
+  start_epoch: 50
+  min_lr: 0.0000001
