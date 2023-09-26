@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-from models.Stripformer import Stripformer
-from models.FSformer import FSformer
+from models import Stripformer, FSformer, FSformer_v0
 
 def get_generator(model_config):
     generator_name = model_config['g_name']
@@ -9,6 +8,8 @@ def get_generator(model_config):
         model_g = Stripformer()
     elif generator_name == 'FSformer':
         model_g = FSformer()
+    elif generator_name == 'FSformer_v0':
+        model_g = FSformer_v0()
     else:
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
     return nn.DataParallel(model_g)
