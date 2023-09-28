@@ -148,12 +148,15 @@ class FSformer_Loss(nn.Module):
 
     def __init__(self, ):
         super(FSformer_Loss, self).__init__()
-
-        self.waveloss = WaveLoss()
+        
+        self.char = CharbonnierLoss()
+        self.edge = EdgeLoss()
+        self.contrastive = ContrastLoss()
 
     def forward(self, restore, sharp, blur):
-        wavelet = self.waveloss(restore, sharp)
-        loss = wavelet
+        char = self.char(restore, sharp)
+        edge = 0.05 * self.edge(restore, sharp)
+        loss = char + edge
         return loss
 
 
