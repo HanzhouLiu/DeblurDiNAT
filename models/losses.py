@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 import torch.nn.functional as F
+from models.torch_wavelets import DWT_2D
 
 class Vgg19(torch.nn.Module):
     def __init__(self, requires_grad=False):
@@ -61,6 +62,26 @@ class ContrastLoss_Ori(nn.Module):
         contrastive_loss = d_ap / (d_an + 1e-7)
         
         return contrastive_loss
+
+
+class WaveLoss(nn.Module):
+    """Wavelet Loss (L1)"""
+    
+    def __init__(self, wave="haar"):
+        super().__init__()
+        self.dwt = DWT_2D(wave=wave)
+        # self.idwt = IDWT_2D(wave=wave) 
+    
+    def forward(self, x, y):
+        x_ll, x_lh, x_hl, x_hh = self.dwt(x).chunk(chunks=4, dim=1)
+        y_ll, y_lh, y_hl, y_hh = self.dwt(y).chunk(chunks=4, dim=1)
+        x_H = torch.cat((x_lh, x_hl, x_hh), dim=1)
+        y_H = torch.cat((y_lh, y_hl, y_hh), dim=1)
+        ll_loss = F.l1_loss(input=x_ll, target=y_ll)
+        H_loss = F.l1_loss(input=x_H, target=y_H)
+        wave_loss = ll_loss * 0.1 + H_loss * 0.9
+        return wave_loss
+
 
 class CharbonnierLoss(nn.Module):
     """Charbonnier Loss (L1)"""
@@ -123,9 +144,24 @@ class Stripformer_Loss(nn.Module):
         return loss
 
 
+class FSformer_Loss(nn.Module):
+
+    def __init__(self, ):
+        super(Stripformer_Loss, self).__init__()
+
+        self.waveloss = WaveLoss()
+
+    def forward(self, restore, sharp, blur):
+        wavelet = self.waveloss(restore, sharp)
+        loss = wavelet
+        return loss
+
+
 def get_loss(model):
     if model['content_loss'] == 'Stripformer_Loss':
         content_loss = Stripformer_Loss()
+    elif model['content_loss'] == 'FSformer_Loss':
+        content_loss = FSformer_Loss()
     else:
         raise ValueError("ContentLoss [%s] not recognized." % model['content_loss'])
     return content_loss
