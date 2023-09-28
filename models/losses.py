@@ -147,7 +147,7 @@ class Stripformer_Loss(nn.Module):
 class FSformer_Loss(nn.Module):
 
     def __init__(self, ):
-        super(Stripformer_Loss, self).__init__()
+        super(FSformer_Loss, self).__init__()
 
         self.waveloss = WaveLoss()
 
