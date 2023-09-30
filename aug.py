@@ -10,8 +10,8 @@ def get_transforms(size: int, scope: str = 'geometric', crop='random'):
                                     albu.OpticalDistortion(),
                                     albu.OneOf([
                                         albu.CLAHE(clip_limit=2),
-                                        albu.IAASharpen(),
-                                        albu.IAAEmboss(),
+                                        albu.Sharpen(),
+                                        albu.Emboss(),
                                         albu.RandomBrightnessContrast(),
                                         albu.RandomGamma()
                                     ], p=0.5),
