@@ -414,7 +414,6 @@ class FSformer_B1(nn.Module):
     def forward(self, x):
 
         hx, residual_1, residual_2 = self.encoder(x)
-        print(hx.shape)
         hx = self.Trans_block_1(hx)
         hx = self.Trans_block_2(hx)
         hx = self.Trans_block_3(hx)
