@@ -6,9 +6,7 @@ import torch.nn.functional as F
 import numbers
 
 from einops import rearrange
-"""
-FSformer without skip connections
-"""
+
 ##########################################################################
 ## Layer Norm
 
@@ -151,8 +149,20 @@ class Embeddings_output(nn.Module):
         
         self.dwt = DWT_2D(wave='haar')
         self.idwt = IDWT_2D(wave='haar')
+        self.reduce_lH_chan = nn.Sequential(
+            nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=False),
+            nn.Conv2d(dim*3, dim, kernel_size=1, bias=False)
+        )
+        self.enrich_lH_chan = nn.Sequential(
+            nn.Conv2d(dim, dim*3, kernel_size=1, bias=False),
+            nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=False)
+        )
         self.de_block_1 = LoBlock(dim, head_num, 8, 1, False)
-        self.de_block_2 = HiBlock(dim*3, head_num, 8, 1, False)
+        self.de_block_2 = HiBlock(dim, head_num, 8, 1, False)
+        self.de_block_3 = LoBlock(dim, head_num, 8, 1, False)
+        self.de_block_4 = HiBlock(dim, head_num, 8, 1, False)
+        self.de_block_5 = LoBlock(dim, head_num, 8, 1, False)
+        self.de_block_6 = HiBlock(dim, head_num, 8, 1, False)
 
 
         self.de_layer2_1 = nn.Sequential(
@@ -182,8 +192,14 @@ class Embeddings_output(nn.Module):
         
         ll, lh, hl, hh = self.dwt(hx).chunk(4, dim=1)
         lH = torch.cat((lh, hl, hh), dim=1)
+        lH = self.reduce_lH_chan(lH)
         ll = self.de_block_1(ll)
         lH = self.de_block_2(lH)
+        ll = self.de_block_3(ll)
+        lH = self.de_block_4(lH)
+        ll = self.de_block_5(ll)
+        lH = self.de_block_6(lH)
+        lH = self.enrich_lH_chan(lH)
         hx = self.idwt(torch.cat((ll, lH), dim=1))
 
         hx = self.de_layer2_1(hx)
@@ -394,12 +410,30 @@ class FSformer_V2(nn.Module):
         self.encoder = Embeddings()
         head_num = 5
         dim = 320
+        #dim = 320
         self.dwt = DWT_2D(wave='haar')
         self.idwt = IDWT_2D(wave='haar')
+        self.reduce_lH_chan = nn.Sequential(
+            nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=False),
+            nn.Conv2d(dim*3, dim, kernel_size=1, bias=False)
+            
+        )
+        self.enrich_lH_chan = nn.Sequential(
+            nn.Conv2d(dim, dim*3, kernel_size=1, bias=False),
+            nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=False)
+        )
         self.Trans_block_1 = LoBlock(dim, head_num, 8, 1, False)
-        self.Trans_block_2 = HiBlock(dim*3, head_num, 8, 1, False)
+        self.Trans_block_2 = HiBlock(dim, head_num, 8, 1, False)
         self.Trans_block_3 = LoBlock(dim, head_num, 8, 1, False)
-        self.Trans_block_4 = HiBlock(dim*3, head_num, 8, 1, False)
+        self.Trans_block_4 = HiBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_5 = LoBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_6 = HiBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_7 = LoBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_8 = HiBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_9 = LoBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_10 = HiBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_11 = LoBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_12 = HiBlock(dim, head_num, 8, 1, False)
         self.decoder = Embeddings_output()
 
 
@@ -408,10 +442,20 @@ class FSformer_V2(nn.Module):
         hx, residual_1, residual_2 = self.encoder(x)
         ll, lh, hl, hh = self.dwt(hx).chunk(4, dim=1)
         lH = torch.cat((lh, hl, hh), dim=1)
+        lH = self.reduce_lH_chan(lH)
         ll = self.Trans_block_1(ll)
         lH = self.Trans_block_2(lH)
         ll = self.Trans_block_3(ll)
         lH = self.Trans_block_4(lH)
+        ll = self.Trans_block_5(ll)
+        lH = self.Trans_block_6(lH)
+        ll = self.Trans_block_7(ll)
+        lH = self.Trans_block_8(lH)
+        ll = self.Trans_block_9(ll)
+        lH = self.Trans_block_10(lH)
+        ll = self.Trans_block_11(ll)
+        lH = self.Trans_block_12(lH)
+        lH = self.enrich_lH_chan(lH)
         hx = self.idwt(torch.cat((ll, lH), dim=1))
         hx = self.decoder(hx, residual_1, residual_2)
 
