@@ -19,7 +19,7 @@ def get_generator(model_config):
     elif generator_name == 'FSformer_B2':
         model_g = FSformer_B2.FSformer_B2()
     elif generator_name == 'FSformer_V2':
-        model_g = FSformer_B2.FSformer_V2()
+        model_g = FSformer_V2.FSformer_V2()
     else:
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
     return nn.DataParallel(model_g)
