@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import math
-from torch_wavelets import DWT_2D, IDWT_2D
+from models.torch_wavelets import DWT_2D, IDWT_2D
 import torch.nn.functional as F
 import numbers
 
