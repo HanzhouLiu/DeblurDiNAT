@@ -424,9 +424,9 @@ class LoBlock(nn.Module):
         return x
 
 
-class FSformer_V6(nn.Module):
+class FSformer_V7(nn.Module):
     def __init__(self):
-        super(FSformer_V6, self).__init__()
+        super(FSformer_V7, self).__init__()
 
         self.encoder = Embeddings()
         head_num = 5
