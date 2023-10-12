@@ -333,7 +333,7 @@ class SpatialBlock(nn.Module):
 
         self.project_out = nn.Conv2d(dim * 2, dim, kernel_size=1, bias=bias)
 
-        self.norm0 = ComplexNorm(type='spatial')
+        #self.norm0 = ComplexNorm(type='spatial')
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.ffn = FeedForward(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
@@ -362,9 +362,13 @@ class SpatialBlock(nn.Module):
         v_fft = torch.fft.rfft2(v_patch.float())
 
         out_fft = q_fft * k_fft
-        out_fft = self.norm0(out_fft)
-
-        out_fft = v_fft * out_fft
+        #out_fft = self.norm0(out_fft)
+        out_abs = out_fft.abs()
+        
+        attn = out_abs.view(out_abs.shape[:-2]+(-1,)).softmax(dim=-1)
+        attn = attn.view(out_abs.shape)
+        
+        out_fft = v_fft * attn
         output = torch.fft.irfft2(out_fft)
         
         output = rearrange(output, 'b c h w patch1 patch2 -> b c (h patch1) (w patch2)', patch1=self.patch_size,
@@ -384,7 +388,7 @@ class ChanBlock(nn.Module):
 
         self.project_out = nn.Conv2d(dim * 2, dim, kernel_size=1, bias=bias)
 
-        self.norm0 = ComplexNorm(type='channel')        
+        #self.norm0 = ComplexNorm(type='channel')        
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.ffn = FeedForward(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
@@ -406,8 +410,10 @@ class ChanBlock(nn.Module):
         v_fft = torch.fft.rfft(v.float(), dim=1)
 
         out_fft = q_fft * k_fft
-        out_fft = self.norm0(out_fft)
-
+        #out_fft = self.norm0(out_fft)
+        out_fft = out_fft.abs()
+        out_fft = out_fft.softmax(dim=1)
+        
         out_fft = v_fft * out_fft
         output = torch.fft.irfft(out_fft, dim=1)
         output = self.project_out(output)
