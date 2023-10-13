@@ -339,10 +339,9 @@ class SpatialBlock(nn.Module):
         self.heads = num_heads
         self.temperature = nn.Parameter(torch.ones(num_heads, 1, 1, 1))
         
-        self.to_hidden = nn.Conv2d(dim, dim * 6, kernel_size=1, bias=bias)
-        self.to_hidden_dw = nn.Conv2d(dim * 6, dim * 6, kernel_size=3, stride=1, padding=1, groups=dim * 6, bias=bias)
-
-        self.project_out = nn.Conv2d(dim * 2, dim, kernel_size=1, bias=bias)
+        self.qkv = nn.Conv2d(dim, dim*3, kernel_size=1, bias=bias)
+        self.qkv_dwconv = nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=bias)
+        self.project_out = nn.Conv2d(dim, dim, kernel_size=1, bias=bias)
 
         self.complex_norm = ComplexNorm(type='last_dim')
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
