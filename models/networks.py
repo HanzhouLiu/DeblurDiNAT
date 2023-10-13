@@ -45,7 +45,7 @@ def get_generator(model_config):
     elif generator_name == 'Baseline':
         model_g = Baseline.Baseline()
     elif generator_name == 'Freqformer_V4':
-        model_g = Freqformer_V3.Freqformer_V4()
+        model_g = Freqformer_V4.Freqformer_V4()
     else:
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
     return nn.DataParallel(model_g)
