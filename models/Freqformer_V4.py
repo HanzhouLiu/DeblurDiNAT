@@ -201,12 +201,12 @@ class Embeddings_output(nn.Module):
             self.activation,
         )
         
-        self.de_block_1 = ChanBlock(dim, head_num, 1, False)
-        self.de_block_2 = ChanBlock(dim, head_num, 1, False)
-        self.de_block_3 = ChanBlock(dim, head_num, 1, False)
-        self.de_block_4 = ChanBlock(dim, head_num, 1, False)
-        self.de_block_5 = ChanBlock(dim, head_num, 1, False)
-        self.de_block_6 = ChanBlock(dim, head_num, 1, False)
+        self.de_block_1 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.de_block_2 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.de_block_3 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.de_block_4 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.de_block_5 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.de_block_6 = SpatialBlock(dim, head_num, 8, 1, False)
 
 
         self.de_layer2_1 = nn.Sequential(
@@ -339,10 +339,9 @@ class SpatialBlock(nn.Module):
         self.heads = num_heads
         self.temperature = nn.Parameter(torch.ones(num_heads, 1, 1, 1))
         
-        self.to_hidden = nn.Conv2d(dim, dim * 6, kernel_size=1, bias=bias)
-        self.to_hidden_dw = nn.Conv2d(dim * 6, dim * 6, kernel_size=3, stride=1, padding=1, groups=dim * 6, bias=bias)
-
-        self.project_out = nn.Conv2d(dim * 2, dim, kernel_size=1, bias=bias)
+        self.qkv = nn.Conv2d(dim, dim*3, kernel_size=1, bias=bias)
+        self.qkv_dwconv = nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=bias)
+        self.project_out = nn.Conv2d(dim, dim, kernel_size=1, bias=bias)
 
         self.complex_norm = ComplexNorm(type='last_dim')
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
@@ -360,30 +359,34 @@ class SpatialBlock(nn.Module):
     def attn(self, x):
         B, C, H, W= x.shape
         
-        hidden = self.to_hidden(x)
+        qkv = self.qkv(x)
 
-        q, k, v = self.to_hidden_dw(hidden).chunk(3, dim=1)
+        q, k, v = self.qkv_dwconv(qkv).chunk(3, dim=1)
 
-        q_patch = rearrange(q, 'b (head c) (h patch1) (w patch2) -> b head (h w) c (patch1 patch2)', head=self.heads, patch1=self.patch_size,
+        q_patch = rearrange(q, 'b (head c) (h patch1) (w patch2) -> b head (h w) c patch1 patch2', head=self.heads, patch1=self.patch_size,
                             patch2=self.patch_size)
-        k_patch = rearrange(k, 'b (head c) (h patch1) (w patch2) -> b head (h w) c (patch1 patch2)', head=self.heads, patch1=self.patch_size,
+        k_patch = rearrange(k, 'b (head c) (h patch1) (w patch2) -> b head (h w) c patch1 patch2', head=self.heads, patch1=self.patch_size,
                             patch2=self.patch_size)
-        v_patch = rearrange(v, 'b (head c) (h patch1) (w patch2) -> b head (h w) c (patch1 patch2)', head=self.heads, patch1=self.patch_size,
+        v_patch = rearrange(v, 'b (head c) (h patch1) (w patch2) -> b head (h w) c patch1 patch2', head=self.heads, patch1=self.patch_size,
                             patch2=self.patch_size)
-        q_fft = torch.fft.rfft(q_patch.float(), dim=-1)
-        k_fft = torch.fft.rfft(k_patch.float(), dim=-1)
-        v_fft = torch.fft.rfft(v_patch.float(), dim=-1)
+        q_fft = torch.fft.rfft2(q_patch.float())
+        k_fft = torch.fft.rfft2(k_patch.float())
+        v_fft = torch.fft.rfft2(v_patch.float())
+
+        q_fft = q_fft.view(q_fft.shape[:-2]+(-1,))  # b head (h w) c (patch1 patch2//2+1)
+        k_fft = k_fft.view(k_fft.shape[:-2]+(-1,))
+        v_fft = v_fft.view(v_fft.shape[:-2]+(-1,))
         
-        attn = (q_fft.transpose(-2, -1) @ k_fft) * self.temperature  # b head (h w) (patch1 patch2) (patch1 patch2)
+        attn = (q_fft@ k_fft.transpose(-2, -1)) * self.temperature  # b head (h w) c c
         
-        attn = self.complex_norm(attn)  # b head (h w) (patch1 patch2) (patch1 patch2)
+        attn = self.complex_norm(attn)  # b head (h w) c c
         
-        out = attn @ (v_fft.transpose(-2, -1))  # b head (h w) (patch1 patch2) c
-        out = out.transpose(-2, -1)  # b head (h w) c (patch1 patch2)
-        out = torch.fft.irfft(out, dim=-1)  # b head (h w) c (patch1 patch2)
+        out = attn @ v_fft  # b head (h w) c (path1 patch2//2+1)
+        out = out.view(out.shape[:-1]+(self.patch_size, self.patch_size//2+1))  # b head (h w) c patch1 patch2//2+1
+        out = torch.fft.irfft2(out, s=(self.patch_size, self.patch_size))  # b head (h w) c patch1 patch2
         
-        out = rearrange(out, 'b head (h w) c (patch1 patch2) -> b (head c) (h patch1) (w patch2)', head=self.heads, 
-                        h=H//self.patch_size, w=W//self.patch_size, patch1=self.patch_size, patch2=self.patch_size)
+        out = rearrange(out, 'b head (h w) c patch1 patch2 -> b (head c) (h patch1) (w patch2)', head=self.heads, 
+                        h=H//self.patch_size, w=W//self.patch_size)
         
         out = self.project_out(out)
 
@@ -434,15 +437,15 @@ class ChanBlock(nn.Module):
         k = rearrange(k, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
         v = rearrange(v, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
 
-        q_fft = torch.fft.fft(q.float(), dim=-2)
-        k_fft = torch.fft.fft(k.float(), dim=-2)
-        v_fft = torch.fft.fft(v.float(), dim=-2)
+        q_fft = torch.fft.rfft(q.float(), dim=-2)
+        k_fft = torch.fft.rfft(k.float(), dim=-2)
+        v_fft = torch.fft.rfft(v.float(), dim=-2)
 
         attn = (q_fft @ k_fft.transpose(-2, -1)) * self.temperature
         attn = self.complex_norm(attn)
 
         out = (attn @ v_fft)
-        out = torch.fft.ifft(out, dim=-2)
+        out = torch.fft.irfft(out, dim=-2)
         
         out = rearrange(out, 'b head c (h w) -> b (head c) h w', head=self.num_heads, h=h, w=w)
 
@@ -471,18 +474,18 @@ class Freqformer_V4(nn.Module):
         head_num = 5
         dim = 320
         #dim = 320
-        self.Trans_block_1 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_2 = ChanBlock(dim, head_num, 1, False)  # dim, num_heads, ffn_expansion_factor, bias
-        self.Trans_block_3 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_4 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_5 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_6 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_7 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_8 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_9 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_10 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_11 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_12 = ChanBlock(dim, head_num, 1, False)
+        self.Trans_block_1 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_2 = SpatialBlock(dim, head_num, 8, 1, False)  # dim, num_heads, ffn_expansion_factor, bias
+        self.Trans_block_3 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_4 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_5 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_6 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_7 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_8 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_9 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_10 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_11 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_12 = SpatialBlock(dim, head_num, 8, 1, False)
         self.decoder = Embeddings_output()
 
 
