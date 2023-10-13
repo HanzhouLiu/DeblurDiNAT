@@ -234,11 +234,11 @@ class Embeddings_output(nn.Module):
 
         hx = self.de_layer2_2(torch.cat((hx, residual_2), dim = 1))
 
-        #hx = self.de_block_1(hx)
+        hx = self.de_block_1(hx)
         hx = self.de_block_2(hx)
-        #hx = self.de_block_3(hx)
+        hx = self.de_block_3(hx)
         hx = self.de_block_4(hx)
-        #hx = self.de_block_5(hx)
+        hx = self.de_block_5(hx)
         hx = self.de_block_6(hx)
 
         hx = self.de_layer2_1(hx)

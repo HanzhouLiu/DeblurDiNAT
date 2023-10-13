@@ -201,11 +201,11 @@ class Embeddings_output(nn.Module):
             self.activation,
         )
         
-        self.de_block_1 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.de_block_1 = ChanBlock(dim, head_num, 1, False)
         self.de_block_2 = ChanBlock(dim, head_num, 1, False)
-        self.de_block_3 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.de_block_3 = ChanBlock(dim, head_num, 1, False)
         self.de_block_4 = ChanBlock(dim, head_num, 1, False)
-        self.de_block_5 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.de_block_5 = ChanBlock(dim, head_num, 1, False)
         self.de_block_6 = ChanBlock(dim, head_num, 1, False)
 
 
@@ -339,9 +339,10 @@ class SpatialBlock(nn.Module):
         self.heads = num_heads
         self.temperature = nn.Parameter(torch.ones(num_heads, 1, 1, 1))
         
-        self.qkv = nn.Conv2d(dim, dim*3, kernel_size=1, bias=bias)
-        self.qkv_dwconv = nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=bias)
-        self.project_out = nn.Conv2d(dim, dim, kernel_size=1, bias=bias)
+        self.to_hidden = nn.Conv2d(dim, dim * 6, kernel_size=1, bias=bias)
+        self.to_hidden_dw = nn.Conv2d(dim * 6, dim * 6, kernel_size=3, stride=1, padding=1, groups=dim * 6, bias=bias)
+
+        self.project_out = nn.Conv2d(dim * 2, dim, kernel_size=1, bias=bias)
 
         self.complex_norm = ComplexNorm(type='last_dim')
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
@@ -373,12 +374,12 @@ class SpatialBlock(nn.Module):
         k_fft = torch.fft.rfft(k_patch.float(), dim=-1)
         v_fft = torch.fft.rfft(v_patch.float(), dim=-1)
         
-        attn = (q_fft @ k_fft.transpose(-2, -1)) * self.temperature  # b head (h w) c c
+        attn = (q_fft.transpose(-2, -1) @ k_fft) * self.temperature  # b head (h w) (patch1 patch2) (patch1 patch2)
         
-        attn = self.complex_norm(attn)  # b head (h w) c c
+        attn = self.complex_norm(attn)  # b head (h w) (patch1 patch2) (patch1 patch2)
         
-        out = attn @ v_fft  # b head (h w) c (patch1 patch2)
-        # out = out.transpose(-2, -1)  # b head (h w) c (patch1 patch2)
+        out = attn @ (v_fft.transpose(-2, -1))  # b head (h w) (patch1 patch2) c
+        out = out.transpose(-2, -1)  # b head (h w) c (patch1 patch2)
         out = torch.fft.irfft(out, dim=-1)  # b head (h w) c (patch1 patch2)
         
         out = rearrange(out, 'b head (h w) c (patch1 patch2) -> b (head c) (h patch1) (w patch2)', head=self.heads, 
@@ -410,8 +411,7 @@ class ChanBlock(nn.Module):
         self.qkv = nn.Conv2d(dim, dim*3, kernel_size=1, bias=bias)
         self.qkv_dwconv = nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=bias)
         self.project_out = nn.Conv2d(dim, dim, kernel_size=1, bias=bias)
-        
-        self.complex_norm = ComplexNorm(type='last_dim')
+
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.ffn = FeedForward(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
@@ -433,15 +433,13 @@ class ChanBlock(nn.Module):
         k = rearrange(k, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
         v = rearrange(v, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
 
-        q_fft = torch.fft.rfft(q.float(), dim=-2)
-        k_fft = torch.fft.rfft(k.float(), dim=-2)
-        v_fft = torch.fft.rfft(v.float(), dim=-2)
+        q = torch.nn.functional.normalize(q, dim=-1)
+        k = torch.nn.functional.normalize(k, dim=-1)
 
-        attn = (q_fft @ k_fft.transpose(-2, -1)) * self.temperature
-        attn = self.complex_norm(attn)
+        attn = (q @ k.transpose(-2, -1)) * self.temperature
+        attn = attn.softmax(dim=-1)
 
-        out = (attn @ v_fft)
-        out = torch.fft.irfft(out, dim=-2)
+        out = (attn @ v)
         
         out = rearrange(out, 'b head c (h w) -> b (head c) h w', head=self.num_heads, h=h, w=w)
 
@@ -462,25 +460,25 @@ print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params
 """
 
 
-class Freqformer_V1(nn.Module):
+class Baseline(nn.Module):
     def __init__(self):
-        super(Freqformer_V1, self).__init__()
+        super(Baseline, self).__init__()
 
         self.encoder = Embeddings()
         head_num = 5
         dim = 320
         #dim = 320
-        self.Trans_block_1 = SpatialBlock(dim, head_num, 8, 1, False)  # dim, num_heads, win_size, ffn_expansion_factor, bias
+        self.Trans_block_1 = ChanBlock(dim, head_num, 1, False)
         self.Trans_block_2 = ChanBlock(dim, head_num, 1, False)  # dim, num_heads, ffn_expansion_factor, bias
-        self.Trans_block_3 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_3 = ChanBlock(dim, head_num, 1, False)
         self.Trans_block_4 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_5 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_5 = ChanBlock(dim, head_num, 1, False)
         self.Trans_block_6 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_7 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_7 = ChanBlock(dim, head_num, 1, False)
         self.Trans_block_8 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_9 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_9 = ChanBlock(dim, head_num, 1, False)
         self.Trans_block_10 = ChanBlock(dim, head_num, 1, False)
-        self.Trans_block_11 = SpatialBlock(dim, head_num, 8, 1, False)
+        self.Trans_block_11 = ChanBlock(dim, head_num, 1, False)
         self.Trans_block_12 = ChanBlock(dim, head_num, 1, False)
         self.decoder = Embeddings_output()
 
@@ -507,7 +505,7 @@ class Freqformer_V1(nn.Module):
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()
-model = Freqformer_V0().cuda()
+model = Freqformer_V2().cuda()
 out = model(inp)
 print(out.shape)
 print("--- %s seconds ---" % (time.time() - start_time))
