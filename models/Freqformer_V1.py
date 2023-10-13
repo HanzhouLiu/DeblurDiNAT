@@ -374,12 +374,12 @@ class SpatialBlock(nn.Module):
         k_fft = torch.fft.rfft(k_patch.float(), dim=-1)
         v_fft = torch.fft.rfft(v_patch.float(), dim=-1)
         
-        attn = (q_fft.transpose(-2, -1) @ k_fft) * self.temperature  # b head (h w) (patch1 patch2) (patch1 patch2)
+        attn = (q_fft @ k_fft.transpose(-2, -1)) * self.temperature  # b head (h w) c c
         
-        attn = self.complex_norm(attn)  # b head (h w) (patch1 patch2) (patch1 patch2)
+        attn = self.complex_norm(attn)  # b head (h w) c c
         
-        out = attn @ (v_fft.transpose(-2, -1))  # b head (h w) (patch1 patch2) c
-        out = out.transpose(-2, -1)  # b head (h w) c (patch1 patch2)
+        out = attn @ v_fft  # b head (h w) c (patch1 patch2)
+        # out = out.transpose(-2, -1)  # b head (h w) c (patch1 patch2)
         out = torch.fft.irfft(out, dim=-1)  # b head (h w) c (patch1 patch2)
         
         out = rearrange(out, 'b head (h w) c (patch1 patch2) -> b (head c) (h patch1) (w patch2)', head=self.heads, 
