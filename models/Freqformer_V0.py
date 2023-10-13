@@ -359,9 +359,9 @@ class SpatialBlock(nn.Module):
     def attn(self, x):
         B, C, H, W= x.shape
         
-        hidden = self.to_hidden(x)
+        qkv = self.qkv(x)
 
-        q, k, v = self.to_hidden_dw(hidden).chunk(3, dim=1)
+        q, k, v = self.qkv_dwconv(qkv).chunk(3, dim=1)
 
         q_patch = rearrange(q, 'b (head c) (h patch1) (w patch2) -> b head (h w) c patch1 patch2', head=self.heads, patch1=self.patch_size,
                             patch2=self.patch_size)
