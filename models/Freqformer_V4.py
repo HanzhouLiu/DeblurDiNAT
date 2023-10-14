@@ -411,7 +411,8 @@ class ChanBlock(nn.Module):
         self.qkv = nn.Conv2d(dim, dim*3, kernel_size=1, bias=bias)
         self.qkv_dwconv = nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=bias)
         self.project_out = nn.Conv2d(dim, dim, kernel_size=1, bias=bias)
-
+        
+        self.complex_norm = ComplexNorm(type='last_dim')
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.ffn = FeedForward(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
@@ -429,20 +430,26 @@ class ChanBlock(nn.Module):
         qkv = self.qkv_dwconv(self.qkv(x))
         q,k,v = qkv.chunk(3, dim=1)   
         
-        q = rearrange(q, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
-        k = rearrange(k, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
-        v = rearrange(v, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
+        q = rearrange(q, 'b (head c) h w -> b head c h w', head=self.num_heads)
+        k = rearrange(k, 'b (head c) h w -> b head c h w', head=self.num_heads)
+        v = rearrange(v, 'b (head c) h w -> b head c h w', head=self.num_heads)
 
-        q_fft = torch.fft.rfft(q.float(), dim=-2)
-        k_fft = torch.fft.rfft(k.float(), dim=-2)
+        q_fft = torch.fft.rfft2(q.float())
+        k_fft = torch.fft.rfft2(k.float())
+        v_fft = torch.fft.rfft2(v.float())
+
+        q_fft = rearrange(q_fft, 'b head c h w -> b head c (h w)', head=self.num_heads)
+        k_fft = rearrange(k_fft, 'b head c h w -> b head c (h w)', head=self.num_heads)
+        v_fft = rearrange(v_fft, 'b head c h w -> b head c (h w)', head=self.num_heads)
 
         attn = (q_fft @ k_fft.transpose(-2, -1)) * self.temperature
-        attn = torch.fft.irfft2(attn, s=(c//self.num_heads, c//self.num_heads))
+        attn = self.complex_norm(attn)
 
-        attn = attn.softmax(dim=-1)
-        out = (attn @ v)
+        out = (attn @ v_fft)
+        out = rearrange(out, 'b head c (h w) -> b head c h w ', head=self.num_heads, h=h, w=w//2+1)
+        out = torch.fft.irfft2(out, s=(h, w))
         
-        out = rearrange(out, 'b head c (h w) -> b (head c) h w', head=self.num_heads, h=h, w=w)
+        out = rearrange(out, 'b head c h w -> b (head c) h w', head=self.num_heads, h=h, w=w)
 
         out = self.project_out(out)
         return out

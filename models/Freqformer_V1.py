@@ -202,11 +202,11 @@ class Embeddings_output(nn.Module):
         )
         
         self.de_block_1 = SpatialBlock(dim, head_num, 8, 1, False)
-        self.de_block_2 = ChanBlock(dim, head_num, 1, False)
+        self.de_block_2 = SpatialBlock(dim, head_num, 8, 1, False)
         self.de_block_3 = SpatialBlock(dim, head_num, 8, 1, False)
-        self.de_block_4 = ChanBlock(dim, head_num, 1, False)
+        self.de_block_4 = SpatialBlock(dim, head_num, 8, 1, False)
         self.de_block_5 = SpatialBlock(dim, head_num, 8, 1, False)
-        self.de_block_6 = ChanBlock(dim, head_num, 1, False)
+        self.de_block_6 = SpatialBlock(dim, head_num, 8, 1, False)
 
 
         self.de_layer2_1 = nn.Sequential(
@@ -471,17 +471,17 @@ class Freqformer_V1(nn.Module):
         dim = 320
         #dim = 320
         self.Trans_block_1 = SpatialBlock(dim, head_num, 8, 1, False)  # dim, num_heads, win_size, ffn_expansion_factor, bias
-        self.Trans_block_2 = ChanBlock(dim, head_num, 1, False)  # dim, num_heads, ffn_expansion_factor, bias
+        self.Trans_block_2 = SpatialBlock(dim, head_num, 8, 1, False)  # dim, num_heads, ffn_expansion_factor, bias
         self.Trans_block_3 = SpatialBlock(dim, head_num, 8, 1, False)
-        self.Trans_block_4 = ChanBlock(dim, head_num, 1, False)
+        self.Trans_block_4 = SpatialBlock(dim, head_num, 8, 1, False)
         self.Trans_block_5 = SpatialBlock(dim, head_num, 8, 1, False)
-        self.Trans_block_6 = ChanBlock(dim, head_num, 1, False)
+        self.Trans_block_6 = SpatialBlock(dim, head_num, 8, 1, False)
         self.Trans_block_7 = SpatialBlock(dim, head_num, 8, 1, False)
-        self.Trans_block_8 = ChanBlock(dim, head_num, 1, False)
+        self.Trans_block_8 = SpatialBlock(dim, head_num, 8, 1, False)
         self.Trans_block_9 = SpatialBlock(dim, head_num, 8, 1, False)
-        self.Trans_block_10 = ChanBlock(dim, head_num, 1, False)
+        self.Trans_block_10 = SpatialBlock(dim, head_num, 8, 1, False)
         self.Trans_block_11 = SpatialBlock(dim, head_num, 8, 1, False)
-        self.Trans_block_12 = ChanBlock(dim, head_num, 1, False)
+        self.Trans_block_12 = SpatialBlock(dim, head_num, 8, 1, False)
         self.decoder = Embeddings_output()
 
 
