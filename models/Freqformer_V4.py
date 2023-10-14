@@ -406,7 +406,7 @@ class ChanBlock(nn.Module):
     def __init__(self, dim, num_heads, ffn_expansion_factor, bias):
         super(ChanBlock, self).__init__()
         self.num_heads = num_heads
-        self.temperature = nn.Parameter(torch.ones(num_heads, 1, 1))
+        self.temperature = nn.Parameter(torch.ones(num_heads, 1, 1, 1))
 
         self.qkv = nn.Conv2d(dim, dim*3, kernel_size=1, bias=bias)
         self.qkv_dwconv = nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=bias)
@@ -430,26 +430,20 @@ class ChanBlock(nn.Module):
         qkv = self.qkv_dwconv(self.qkv(x))
         q,k,v = qkv.chunk(3, dim=1)   
         
-        q = rearrange(q, 'b (head c) h w -> b head c h w', head=self.num_heads)
-        k = rearrange(k, 'b (head c) h w -> b head c h w', head=self.num_heads)
-        v = rearrange(v, 'b (head c) h w -> b head c h w', head=self.num_heads)
+        q = rearrange(q, 'b (head c) h w -> b head h c w', head=self.num_heads)
+        k = rearrange(k, 'b (head c) h w -> b head h c w', head=self.num_heads)
+        v = rearrange(v, 'b (head c) h w -> b head h c w', head=self.num_heads)
 
-        q_fft = torch.fft.rfft2(q.float())
-        k_fft = torch.fft.rfft2(k.float())
-        v_fft = torch.fft.rfft2(v.float())
-
-        q_fft = rearrange(q_fft, 'b head c h w -> b head c (h w)', head=self.num_heads)
-        k_fft = rearrange(k_fft, 'b head c h w -> b head c (h w)', head=self.num_heads)
-        v_fft = rearrange(v_fft, 'b head c h w -> b head c (h w)', head=self.num_heads)
+        q_fft = torch.fft.rfft(q.float(), dim=-1)
+        k_fft = torch.fft.rfft(k.float(), dim=-1)
+        v_fft = torch.fft.rfft(v.float(), dim=-1)
 
         attn = (q_fft @ k_fft.transpose(-2, -1)) * self.temperature
         attn = self.complex_norm(attn)
 
         out = (attn @ v_fft)
-        out = rearrange(out, 'b head c (h w) -> b head c h w ', head=self.num_heads, h=h, w=w//2+1)
+        out = rearrange(out, 'b head h c w -> b (head c) h w ', head=self.num_heads, h=h, w=w//2+1)
         out = torch.fft.irfft2(out, s=(h, w))
-        
-        out = rearrange(out, 'b head c h w -> b (head c) h w', head=self.num_heads, h=h, w=w)
 
         out = self.project_out(out)
         return out
@@ -457,7 +451,7 @@ class ChanBlock(nn.Module):
 import time
 start_time = time.time()
 inp = torch.randn(1, 32, 64, 64).cuda()
-model = ChanBlock(dim=32, num_heads=2, bias=False).cuda()
+model = ChanBlock(dim=32, num_heads=2, ffn_expansion_factor=1, bias=False).cuda()
 out = model(inp)
 print(out.shape)
 print("--- %s seconds ---" % (time.time() - start_time))
