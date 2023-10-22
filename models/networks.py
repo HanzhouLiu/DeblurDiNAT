@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from models import Stripformer, FSformer, FSformer_v0, FSformer_v1, FSformer_B, FSformer_B1, FSformer_B2, FSformer_V2, FSformer_V3, FSformer_V4, FSformer_V5, FSformer_V6, FSformer_V7, FSformer_V8, Freqformer, Freqformer_V0, Freqformer_V1, Freqformer_V2, Freqformer_V3, Baseline, Freqformer_V4
+from models import Stripformer, FSformer, FSformer_v0, FSformer_v1, FSformer_B, FSformer_B1, FSformer_B2, FSformer_V2, FSformer_V3, FSformer_V4, FSformer_V5, FSformer_V6, FSformer_V7, FSformer_V8, Freqformer, Freqformer_V0, Freqformer_V1, Freqformer_V2, Freqformer_V3, Baseline, Freqformer_V4, SpikeDeblur
 
 def get_generator(model_config):
     generator_name = model_config['g_name']
@@ -46,6 +46,8 @@ def get_generator(model_config):
         model_g = Baseline.Baseline()
     elif generator_name == 'Freqformer_V4':
         model_g = Freqformer_V4.Freqformer_V4()
+    elif generator_name == 'SpikeDeblur':
+        model_g = SpikeDeblur.SpikeDeblur()
     else:
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
     return nn.DataParallel(model_g)
