@@ -352,8 +352,8 @@ class LoBlock(nn.Module):
 
         #self.threshold = nn.Parameter(torch.tensor([1.0]), requires_grad=True)
         
-        self.q_lif = MultiStepLIFNode(tau=2.0, detach_reset=True, v_threshold=1.0, backend='torch')
-        self.k_lif = MultiStepLIFNode(tau=2.0, detach_reset=True, v_threshold=1.0, backend='torch')
+        self.q_lif = MultiStepLIFNode(tau=2.0, detach_reset=True, v_threshold=1.0, backend='cupy')
+        self.k_lif = MultiStepLIFNode(tau=2.0, detach_reset=True, v_threshold=1.0, backend='cupy')
         
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
