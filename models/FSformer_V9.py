@@ -147,7 +147,9 @@ class Embeddings_output(nn.Module):
             self.activation,
         )
         
-
+        self.dtcwt = DTCWTForward(J=4, biort='near_sym_b', qshift='qshift_b')
+        self.idtcwt = DTCWTInverse(biort='near_sym_b', qshift='qshift_b')
+        
         self.de_block_1 = LoBlock(dim, head_num, 8, 1, False)
         self.de_block_2 = HiBlock(dim, head_num, 8, 1, False)
         self.de_block_3 = LoBlock(dim, head_num, 8, 1, False)
@@ -180,13 +182,15 @@ class Embeddings_output(nn.Module):
         hx = self.de_layer3_1(x)
 
         hx = self.de_layer2_2(torch.cat((hx, residual_2), dim = 1))
-        
-        hx = self.de_block_1(hx)
+        lx, hx_ = self.dtcwt(hx)
+        lx = self.de_block_1(lx)
         hx = self.de_block_2(hx)
-        hx = self.de_block_3(hx)
+        lx = self.de_block_3(lx)
         hx = self.de_block_4(hx)
-        hx = self.de_block_5(hx)
+        lx = self.de_block_5(lx)
         hx = self.de_block_6(hx)
+        lx_, hx = self.dtcwt(hx)
+        hx = self.idtcwt((lx, hx))
 
         hx = self.de_layer2_1(hx)
         hx = self.activation(self.de_layer1_3(torch.cat((hx, residual_1), dim = 1)) + hx)
@@ -346,15 +350,14 @@ class LoBlock(nn.Module):
             nn.Conv2d(dim, dim*3, kernel_size=1, bias=bias),
             nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=bias)
         )
-        
-        self.dtcwt = DTCWTForward(J=4, biort='near_sym_b', qshift='qshift_b')
-        self.idtcwt = DTCWTInverse(biort='near_sym_b', qshift='qshift_b')
+
         
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.ffn = FeedForward(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
 
     def forward(self, x):
+        #print(x.shape)
         x = x + self.attn(self.norm1(x))
         x = x + self.ffn(self.norm2(x))
 
@@ -369,7 +372,7 @@ class LoBlock(nn.Module):
         """
         B, C, H, W = x.shape
         #print(x.shape)
-        x, _ = self.dtcwt(x)
+        
         #print(x.shape)
         l_qkv = self.l_qkv(x)
         l_q, l_k, l_v = l_qkv.chunk(3, dim=1)
@@ -384,9 +387,7 @@ class LoBlock(nn.Module):
 
         l_attn = (l_attn @ l_v)
 
-        x = rearrange(l_attn, 'b head (h w) c -> b (head c) h w', head=self.heads, h=H//8, w=W//8)
-        
-        x = self.idtcwt((x, _))
+        x = rearrange(l_attn, 'b head (h w) c -> b (head c) h w', head=self.heads, h=H, w=W)
         
         return x
 
@@ -399,6 +400,10 @@ class FSformer_V9(nn.Module):
         head_num = 5
         dim = 320 
         #dim = 320
+        
+        self.dtcwt = DTCWTForward(J=4, biort='near_sym_b', qshift='qshift_b')
+        self.idtcwt = DTCWTInverse(biort='near_sym_b', qshift='qshift_b')
+        
         self.Trans_block_1 = LoBlock(dim, head_num, 8, 1, False)
         self.Trans_block_2 = HiBlock(dim, head_num, 8, 1, False)
         self.Trans_block_3 = LoBlock(dim, head_num, 8, 1, False)
@@ -417,18 +422,21 @@ class FSformer_V9(nn.Module):
     def forward(self, x):
 
         hx, residual_1, residual_2 = self.encoder(x)
-        hx = self.Trans_block_1(hx)
+        lx, hx_ = self.dtcwt(hx)
+        lx = self.Trans_block_1(lx)
         hx = self.Trans_block_2(hx)
-        hx = self.Trans_block_3(hx)
+        lx = self.Trans_block_3(lx)
         hx = self.Trans_block_4(hx)
-        hx = self.Trans_block_5(hx)
+        lx = self.Trans_block_5(lx)
         hx = self.Trans_block_6(hx)
-        hx = self.Trans_block_7(hx)
+        lx = self.Trans_block_7(lx)
         hx = self.Trans_block_8(hx)
-        hx = self.Trans_block_9(hx)
+        lx = self.Trans_block_9(lx)
         hx = self.Trans_block_10(hx)
-        hx = self.Trans_block_11(hx)
+        lx = self.Trans_block_11(lx)
         hx = self.Trans_block_12(hx)
+        lx_, hx = self.dtcwt(hx)
+        hx = self.idtcwt((lx, hx))
         hx = self.decoder(hx, residual_1, residual_2)
 
         return hx + x
@@ -436,7 +444,7 @@ class FSformer_V9(nn.Module):
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
-model = FSformer_V10().cuda()#.to(dtype=torch.float16)
+model = FSformer_V9().cuda()#.to(dtype=torch.float16)
 out = model(inp)
 print(out.shape)
 print("--- %s seconds ---" % (time.time() - start_time))
