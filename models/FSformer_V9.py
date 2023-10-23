@@ -368,9 +368,9 @@ class LoBlock(nn.Module):
         Link: https://arxiv.org/abs/2205.13213
         """
         B, C, H, W = x.shape
-        print(x.shape)
+        #print(x.shape)
         x, _ = self.dtcwt(x)
-        print(x.shape)
+        #print(x.shape)
         l_qkv = self.l_qkv(x)
         l_q, l_k, l_v = l_qkv.chunk(3, dim=1)
 
