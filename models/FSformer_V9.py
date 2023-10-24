@@ -3,7 +3,7 @@ import torch.nn as nn
 import math
 import torch.nn.functional as F
 import numbers
-from pytorch_wavelets import DTCWTForward, DTCWTInverse
+from pytorch_wavelets import DWTForward, DWTInverse
 
 from einops import rearrange
 
@@ -147,8 +147,8 @@ class Embeddings_output(nn.Module):
             self.activation,
         )
         
-        self.dtcwt = DTCWTForward(J=4, biort='near_sym_b', qshift='qshift_b')
-        self.idtcwt = DTCWTInverse(biort='near_sym_b', qshift='qshift_b')
+        self.dwt = DWTForward(J=4, wave='haar')
+        self.idwt = DWTInverse(wave='haar')
         
         self.de_block_1 = LoBlock(dim, head_num, 8, 1, False)
         self.de_block_2 = HiBlock(dim, head_num, 8, 1, False)
@@ -182,15 +182,15 @@ class Embeddings_output(nn.Module):
         hx = self.de_layer3_1(x)
 
         hx = self.de_layer2_2(torch.cat((hx, residual_2), dim = 1))
-        lx, hx_ = self.dtcwt(hx)
+        lx, hx_ = self.dwt(hx)
         lx = self.de_block_1(lx)
         hx = self.de_block_2(hx)
         lx = self.de_block_3(lx)
         hx = self.de_block_4(hx)
         lx = self.de_block_5(lx)
         hx = self.de_block_6(hx)
-        lx_, hx = self.dtcwt(hx)
-        hx = self.idtcwt((lx, hx))
+        lx_, hx = self.dwt(hx)
+        hx = self.idwt((lx, hx))
 
         hx = self.de_layer2_1(hx)
         hx = self.activation(self.de_layer1_3(torch.cat((hx, residual_1), dim = 1)) + hx)
@@ -401,8 +401,8 @@ class FSformer_V9(nn.Module):
         dim = 320 
         #dim = 320
         
-        self.dtcwt = DTCWTForward(J=4, biort='near_sym_b', qshift='qshift_b')
-        self.idtcwt = DTCWTInverse(biort='near_sym_b', qshift='qshift_b')
+        self.dwt = DWTForward(J=4, wave='haar')
+        self.idwt = DWTInverse(wave='haar')
         
         self.Trans_block_1 = LoBlock(dim, head_num, 8, 1, False)
         self.Trans_block_2 = HiBlock(dim, head_num, 8, 1, False)
@@ -422,7 +422,7 @@ class FSformer_V9(nn.Module):
     def forward(self, x):
 
         hx, residual_1, residual_2 = self.encoder(x)
-        lx, hx_ = self.dtcwt(hx)
+        lx, hx_ = self.dwt(hx)
         lx = self.Trans_block_1(lx)
         hx = self.Trans_block_2(hx)
         lx = self.Trans_block_3(lx)
@@ -435,8 +435,8 @@ class FSformer_V9(nn.Module):
         hx = self.Trans_block_10(hx)
         lx = self.Trans_block_11(lx)
         hx = self.Trans_block_12(hx)
-        lx_, hx = self.dtcwt(hx)
-        hx = self.idtcwt((lx, hx))
+        lx_, hx = self.dwt(hx)
+        hx = self.idwt((lx, hx))
         hx = self.decoder(hx, residual_1, residual_2)
 
         return hx + x
