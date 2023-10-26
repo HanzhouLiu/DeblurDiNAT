@@ -292,7 +292,7 @@ print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params
 class NADeblur_V0(nn.Module):
     def __init__(self,
                  dim = 64, 
-                 num_blocks = [4,6,8],
+                 num_blocks = [6,8,12],
                  num_refinement_blocks = 4,
                  num_heads = [2,4,8], 
                  kernel = 7, 
