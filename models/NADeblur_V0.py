@@ -3,7 +3,7 @@ import torch.nn as nn
 import math
 import torch.nn.functional as F
 import numbers
-from models.torch_wavelets import DWT_2D, IDWT_2D
+from torch_wavelets import DWT_2D, IDWT_2D
 from natten import NeighborhoodAttention1D, NeighborhoodAttention2D
 
 from einops import rearrange
@@ -171,10 +171,10 @@ class Embeddings(nn.Module):
             nn.Conv2d(dim, dim, kernel_size=3, padding=1),
             self.activation,
             nn.Conv2d(dim, dim, kernel_size=3, padding=1))
-        self.en_layer1_4 = nn.Sequential(
-            nn.Conv2d(dim, dim, kernel_size=3, padding=1),
-            self.activation,
-            nn.Conv2d(dim, dim, kernel_size=3, padding=1))
+        #self.en_layer1_4 = nn.Sequential(
+        #    nn.Conv2d(dim, dim, kernel_size=3, padding=1),
+        #    self.activation,
+        #    nn.Conv2d(dim, dim, kernel_size=3, padding=1))
 
 
         self.en_layer2_1 = nn.Sequential(
@@ -189,10 +189,10 @@ class Embeddings(nn.Module):
             nn.Conv2d(dim*2, dim*2, kernel_size=3, padding=1),
             self.activation,
             nn.Conv2d(dim*2, dim*2, kernel_size=3, padding=1))
-        self.en_layer2_4 = nn.Sequential(
-            nn.Conv2d(dim*2, dim*2, kernel_size=3, padding=1),
-            self.activation,
-            nn.Conv2d(dim*2, dim*2, kernel_size=3, padding=1))
+        #self.en_layer2_4 = nn.Sequential(
+        #    nn.Conv2d(dim*2, dim*2, kernel_size=3, padding=1),
+        #    self.activation,
+        #    nn.Conv2d(dim*2, dim*2, kernel_size=3, padding=1))
 
 
         self.en_layer3_1 = nn.Sequential(
@@ -206,12 +206,12 @@ class Embeddings(nn.Module):
         hx = self.en_layer1_1(x)
         hx = self.activation(self.en_layer1_2(hx) + hx)
         hx = self.activation(self.en_layer1_3(hx) + hx)
-        hx = self.activation(self.en_layer1_4(hx) + hx)
+        #hx = self.activation(self.en_layer1_4(hx) + hx)
         residual_1 = hx
         hx = self.en_layer2_1(hx)
         hx = self.activation(self.en_layer2_2(hx) + hx)
         hx = self.activation(self.en_layer2_3(hx) + hx)
-        hx = self.activation(self.en_layer2_4(hx) + hx)
+        #hx = self.activation(self.en_layer2_4(hx) + hx)
         residual_2 = hx
         hx = self.en_layer3_1(hx)
 
@@ -224,7 +224,7 @@ class Embeddings_output(nn.Module):
         self.activation = nn.LeakyReLU(0.2, True)
         
         self.de_trans_level3 = nn.Sequential(*[
-            TransBlock(dim*2**2, heads[2], 7, 3, 1, bias=bias) for i in 
+            TransBlock(dim*2**2, heads[2], 7, 4, 1, bias=bias) for i in 
             range(num_blocks[2])
         ])
         
@@ -236,7 +236,7 @@ class Embeddings_output(nn.Module):
         self.fusion_level2 = Fusion(n_feat=dim*2, bias=bias)
 
         self.de_trans_level2 = nn.Sequential(*[
-            TransBlock(dim*2, heads[1], 7, 3, 1, bias=bias) for i in 
+            TransBlock(dim*2, heads[1], 7, 8, 1, bias=bias) for i in 
             range(num_blocks[1])
         ])
 
@@ -248,12 +248,12 @@ class Embeddings_output(nn.Module):
         self.fusion_level1 = Fusion(n_feat=dim, bias=bias)
 
         self.de_trans_level1 = nn.Sequential(*[
-            TransBlock(dim, heads[0], 7, 3, 1, bias=bias) for i in 
+            TransBlock(dim, heads[0], 7, 16, 1, bias=bias) for i in 
             range(num_blocks[0])
         ])
         
         self.refinement = nn.Sequential(*[
-            TransBlock(dim, heads[0], 7, 3, 1, bias=bias) for i in 
+            TransBlock(dim, heads[0], 7, 16, 1, bias=bias) for i in 
             range(num_refinement_blocks)
         ])
         self.output = nn.Sequential(
@@ -292,7 +292,7 @@ print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params
 class NADeblur_V0(nn.Module):
     def __init__(self,
                  dim = 64, 
-                 num_blocks = [6,8,12],
+                 num_blocks = [4,6,8],
                  num_refinement_blocks = 4,
                  num_heads = [2,4,8], 
                  kernel = 7, 
@@ -309,8 +309,8 @@ class NADeblur_V0(nn.Module):
         self.encoder_hl = Embeddings(dim)
         self.encoder_hh = Embeddings(dim)
         #dim = 320
-        self.RFM1 = RFM(dim*7, dim*1, num_heads[0], kernel, dilation, ffn_expansion_factor, bias)
-        self.RFM2 = RFM(dim*7, dim*2, num_heads[1], kernel, dilation, ffn_expansion_factor, bias)
+        self.RFM1 = RFM(dim*7, dim*1, num_heads[0], 7, 16, ffn_expansion_factor, bias)
+        self.RFM2 = RFM(dim*7, dim*2, num_heads[1], 7, 8, ffn_expansion_factor, bias)
     
         self.decoder = Embeddings_output(dim, num_blocks, num_refinement_blocks, 
                                          num_heads, bias)
