@@ -171,6 +171,11 @@ class Embeddings(nn.Module):
             nn.Conv2d(dim, dim, kernel_size=3, padding=1),
             self.activation,
             nn.Conv2d(dim, dim, kernel_size=3, padding=1))
+        self.en_layer1_4 = nn.Sequential(
+            nn.Conv2d(dim, dim, kernel_size=3, padding=1),
+            self.activation,
+            nn.Conv2d(dim, dim, kernel_size=3, padding=1))
+
 
         self.en_layer2_1 = nn.Sequential(
             nn.Conv2d(dim, dim*2, kernel_size=3, stride=2, padding=1),
@@ -181,6 +186,10 @@ class Embeddings(nn.Module):
             self.activation,
             nn.Conv2d(dim*2, dim*2, kernel_size=3, padding=1))
         self.en_layer2_3 = nn.Sequential(
+            nn.Conv2d(dim*2, dim*2, kernel_size=3, padding=1),
+            self.activation,
+            nn.Conv2d(dim*2, dim*2, kernel_size=3, padding=1))
+        self.en_layer2_4 = nn.Sequential(
             nn.Conv2d(dim*2, dim*2, kernel_size=3, padding=1),
             self.activation,
             nn.Conv2d(dim*2, dim*2, kernel_size=3, padding=1))
@@ -197,10 +206,12 @@ class Embeddings(nn.Module):
         hx = self.en_layer1_1(x)
         hx = self.activation(self.en_layer1_2(hx) + hx)
         hx = self.activation(self.en_layer1_3(hx) + hx)
+        hx = self.activation(self.en_layer1_4(hx) + hx)
         residual_1 = hx
         hx = self.en_layer2_1(hx)
         hx = self.activation(self.en_layer2_2(hx) + hx)
         hx = self.activation(self.en_layer2_3(hx) + hx)
+        hx = self.activation(self.en_layer2_4(hx) + hx)
         residual_2 = hx
         hx = self.en_layer3_1(hx)
 
