@@ -90,19 +90,15 @@ class RFM(nn.Module):
         x = self.FusionBlock(x)
         return x
 
-# gated fusion module 
+# normal fusion module 
 class Fusion(nn.Module):
     def __init__(self, n_feat, bias):
         super(Fusion, self).__init__()
-
-        self.dwconv = nn.Conv2d(n_feat*2, n_feat*2, kernel_size=3, stride=1, padding=1, groups=n_feat*2, bias=bias)
-        self.out = nn.Conv2d(n_feat, n_feat, kernel_size=1, bias=bias)
+        
+        self.conv = nn.Conv2d(n_feat*2, n_feat, kernel_size=3, stride=1, padding=1, bias=bias)
 
     def forward(self, en, de):
-        x = self.dwconv(torch.cat((en, de), dim=1))
-        x1, x2 = x.chunk(2, dim=1)
-        x = F.gelu(x1) * x2 
-        x = self.out(x)
+        x = self.conv(torch.cat((en, de), dim=1))
         return x
         
     ##########################################################################
