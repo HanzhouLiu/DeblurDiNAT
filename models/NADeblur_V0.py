@@ -3,7 +3,7 @@ import torch.nn as nn
 import math
 import torch.nn.functional as F
 import numbers
-from models.torch_wavelets import DWT_2D, IDWT_2D
+#from models.torch_wavelets import DWT_2D, IDWT_2D
 from natten import NeighborhoodAttention1D, NeighborhoodAttention2D
 
 from einops import rearrange
@@ -135,14 +135,17 @@ class TransBlock(nn.Module):
         self.dilation = dilation
         self.na2d = NeighborhoodAttention2D(dim=dim, kernel_size=kernel, 
                                             dilation=dilation, num_heads=num_heads)
+        self.fusion = Fusion(dim, bias)
         
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.ffn = FeedForward(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
 
     def forward(self, x):
-        x = x + self.attn(self.norm1(x))
-        x = x + self.ffn(self.norm2(x))
+        y = self.attn(self.norm1(x))
+        x = self.fusion(x, y)
+        y = self.ffn(self.norm2(x))
+        x = self.fusion(x, y)
 
         return x
 
@@ -199,6 +202,14 @@ class Embeddings(nn.Module):
             nn.Conv2d(dim*2, dim*2**2, kernel_size=3, stride=2, padding=1),
             self.activation,
         )
+        self.en_layer3_2 = nn.Sequential(
+            nn.Conv2d(dim*2**2, dim*2**2, kernel_size=3, padding=1),
+            self.activation,
+            nn.Conv2d(dim*2**2, dim*2**2, kernel_size=3, padding=1))
+        self.en_layer3_3 = nn.Sequential(
+            nn.Conv2d(dim*2**2, dim*2**2, kernel_size=3, padding=1),
+            self.activation,
+            nn.Conv2d(dim*2**2, dim*2**2, kernel_size=3, padding=1))
 
 
     def forward(self, x):
@@ -214,6 +225,8 @@ class Embeddings(nn.Module):
         #hx = self.activation(self.en_layer2_4(hx) + hx)
         residual_2 = hx
         hx = self.en_layer3_1(hx)
+        hx = self.activation(self.en_layer3_2(hx) + hx)
+        hx = self.activation(self.en_layer3_3(hx) + hx)
 
         return hx, residual_1, residual_2
 
@@ -301,13 +314,10 @@ class NADeblur_V0(nn.Module):
                  bias = False):
         super(NADeblur_V0, self).__init__()
 
-        self.dwt = DWT_2D(wave='haar')
-        self.idwt = IDWT_2D(wave='haar')
+        #self.dwt = DWT_2D(wave='haar')
+        #self.idwt = IDWT_2D(wave='haar')
         
-        self.encoder_ll = Embeddings(dim)
-        self.encoder_lh = Embeddings(dim)
-        self.encoder_hl = Embeddings(dim)
-        self.encoder_hh = Embeddings(dim)
+        self.encoder = Embeddings(dim)
         #dim = 320
         self.RFM1 = RFM(dim*7, dim*1, num_heads[0], 7, 16, ffn_expansion_factor, bias)
         self.RFM2 = RFM(dim*7, dim*2, num_heads[1], 7, 8, ffn_expansion_factor, bias)
@@ -318,17 +328,9 @@ class NADeblur_V0(nn.Module):
 
     def forward(self, x):
         
-        ll, lh, hl, hh = self.dwt(x).chunk(4, dim=1)
+        hx, res1, res2 = self.encoder(x)
         
-        hx_ll, res1_ll, res2_ll = self.encoder_ll(ll)
-        hx_lh, res1_lh, res2_lh = self.encoder_lh(lh)
-        hx_hl, res1_hl, res2_hl = self.encoder_hl(hl)
-        hx_hh, res1_hh, res2_hh = self.encoder_hh(hh)
-        
-        # level1: res1, level2: res2, level3: hx
-        res1 = self.idwt(torch.cat((res1_ll, res1_lh, res1_hl, res1_hh), dim=1))
-        res2 = self.idwt(torch.cat((res2_ll, res2_lh, res2_hl, res2_hh), dim=1))
-        hx = self.idwt(torch.cat((hx_ll, hx_lh, hx_hl, hx_hh), dim=1))
+        # level1: res1, level2: res2, level3: hx)
         
         res2_1 = F.interpolate(res2, scale_factor=2)
         res1_2 = F.interpolate(res1, scale_factor=0.5)
@@ -345,7 +347,7 @@ class NADeblur_V0(nn.Module):
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
-model = NADeblur_V0().cuda()#.to(dtype=torch.float16)
+model = NADeblur_V1().cuda()#.to(dtype=torch.float16)
 out = model(inp)
 print(out.shape)
 print("--- %s seconds ---" % (time.time() - start_time))
