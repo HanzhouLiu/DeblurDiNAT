@@ -79,7 +79,8 @@ class PEG(nn.Module):
 class RFM(nn.Module):
     def __init__(self, in_dim, out_dim, num_heads, kernel, dilation, ffn_expansion_factor, bias):
         super(RFM, self).__init__()
-        self.activation = nn.LeakyReLU(0.2, True)
+        self.ResEmbedding = nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, groups=in_dim),
+                                          nn.Conv2d(in_dim, out_dim, kernel_size=1))
         self.FusionBlock = TransBlock(out_dim, num_heads, kernel, 
                                       dilation, ffn_expansion_factor, bias)
         
