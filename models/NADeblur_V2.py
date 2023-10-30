@@ -75,19 +75,18 @@ class PEG(nn.Module):
         x = self.PEG(x) + x
         return x
 
-# normal multi-scale feature fusion module
+# RFM (Residual fusion module, multi-scale)
 class RFM(nn.Module):
     def __init__(self, in_dim, out_dim, num_heads, kernel, dilation, ffn_expansion_factor, bias):
         super(RFM, self).__init__()
         self.activation = nn.LeakyReLU(0.2, True)
-        self.conv1 = nn.Conv2d(in_dim, out_dim, kernel_size=1, stride=1, bias=bias)
-        self.conv2 = nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=bias)
+        self.FusionBlock = TransBlock(out_dim, num_heads, kernel, 
+                                      dilation, ffn_expansion_factor, bias)
         
     def forward(self, x1, x2, x3):
         x = torch.cat([x1, x2, x3], dim=1)
-        x = self.conv1(x)
-        x = self.activation(x)
-        x = self.conv2(x)
+        x = self.ResEmbedding(x)
+        x = self.FusionBlock(x)
         return x
 
 # normal fusion module 
@@ -101,7 +100,8 @@ class Fusion(nn.Module):
     def forward(self, en, de):
         x = self.conv(torch.cat((en, de), dim=1))
         x = self.activation(x)
-        return x        
+        return x
+        
     ##########################################################################
 ## Gated-Dconv Feed-Forward Network (GDFN)
 class FeedForward(nn.Module):
@@ -132,17 +132,14 @@ class TransBlock(nn.Module):
         self.dilation = dilation
         self.na2d = NeighborhoodAttention2D(dim=dim, kernel_size=kernel, 
                                             dilation=dilation, num_heads=num_heads)
-        self.fusion = Fusion(dim, bias)
         
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.ffn = FeedForward(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
 
     def forward(self, x):
-        y = self.attn(self.norm1(x))
-        x = self.fusion(x, y)
-        y = self.ffn(self.norm2(x))
-        x = self.fusion(x, y)
+        x = x + self.attn(self.norm1(x))
+        x = x + self.ffn(self.norm2(x))
 
         return x
 
@@ -299,7 +296,7 @@ print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
 """
-class NADeblur_V0(nn.Module):
+class NADeblur_V2(nn.Module):
     def __init__(self,
                  dim = 64, 
                  num_blocks = [4,6,8],
@@ -309,7 +306,7 @@ class NADeblur_V0(nn.Module):
                  dilation = 3, 
                  ffn_expansion_factor = 1, 
                  bias = False):
-        super(NADeblur_V0, self).__init__()
+        super(NADeblur_V2, self).__init__()
 
         #self.dwt = DWT_2D(wave='haar')
         #self.idwt = IDWT_2D(wave='haar')
