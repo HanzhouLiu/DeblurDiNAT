@@ -158,12 +158,12 @@ class TransBlock(nn.Module):
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.ffn = FeedForward(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
         
-        #self.skip = ShortSkip(bias=bias)
+        self.skip = ShortSkip(bias=bias)
 
     def forward(self, x):
-        ##x = self.skip(self.attn(self.norm1(x)), x)
-        ##x = self.skip(self.ffn(self.norm2(x)), x)
-        x = self.attn(self.norm1(x)) + self.ffn(self.norm2(x)) + x
+        x = self.skip(self.attn(self.norm1(x)), x)
+        x = self.skip(self.ffn(self.norm2(x)), x)
+        #x = self.attn(self.norm1(x)) + self.ffn(self.norm2(x)) + x
 
         return x
 
@@ -361,7 +361,7 @@ class NADeblur_V3(nn.Module):
         hx = self.decoder(hx, res1, res2)
 
         return hx + x
-
+"""
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
@@ -373,4 +373,4 @@ pytorch_total_params = sum(p.numel() for p in model.parameters())
 print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
-
+"""
