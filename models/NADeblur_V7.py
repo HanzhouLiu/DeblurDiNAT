@@ -145,67 +145,29 @@ class HFFN(nn.Module):
     def __init__(self, dim, ffn_expansion_factor, bias):
         super(HFFN, self).__init__()
 
-        hidden_features = int(dim*ffn_expansion_factor)
+        hidden_features = int(dim*1)
 
-        self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
-        self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias)
+        self.project_in = nn.Conv2d(dim, hidden_features, kernel_size=1, bias=bias)
         
-        self.pool_h1 = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
-        self.conv_h1 = nn.Conv2d(hidden_features, hidden_features, kernel_size=1, stride=1, bias=bias)
+        self.pool_h = nn.AvgPool2d(kernel_size=3, stride=1, padding=1)
         
-        self.conv_h2 = nn.Conv2d(hidden_features, hidden_features, kernel_size=1, stride=1, bias=bias)
-        self.dwconv_h2 = nn.Conv2d(hidden_features, hidden_features, kernel_size=3, stride=1, padding=1, bias=bias, groups=hidden_features)
+        self.conv_h = nn.Conv2d(hidden_features, hidden_features, kernel_size=1, stride=1, bias=bias)
+        self.gelu_h = nn.GELU()
         
-        self.project_out = nn.Conv2d(hidden_features*2, dim, kernel_size=1, bias=bias)
-
-    def forward(self, x):
-        x_in = self.project_in(x)
-        x1, x2 = self.dwconv(x_in).chunk(2, dim=1)
-        x1 = self.conv_h1(self.pool_h1(x1))
-        x2 = self.dwconv_h2(self.conv_h2(x2))
-        x_out = self.project_out(torch.cat((x1, x2), dim=1))
-        return x_out
-"""
-class HFFN(nn.Module):
-    def __init__(self, dim, ffn_expansion_factor, bias):
-        super(HFFN, self).__init__()
-
-        hidden_features = int(dim*ffn_expansion_factor)
-
-        self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
-        self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias)
-        self.ca = ChannelAttention()
-        self.sa = SpatialAttention()
-        self.project_out = nn.Conv2d(hidden_features*2, dim, kernel_size=1, bias=bias)
-
-    def forward(self, x):
-        x_in = self.project_in(x)
-        x1, x2 = self.dwconv(x_in).chunk(2, dim=1)
-        x1 = self.ca(x1)
-        x2 = self.sa(x2)
-        x_out = self.project_out(torch.cat((x1, x2), dim=1))
-        return x_out
-"""
-"""
-class HFFN(nn.Module):
-    def __init__(self, dim, ffn_expansion_factor, bias):
-        super(HFFN, self).__init__()
-
-        hidden_features = int(dim*ffn_expansion_factor)
-
-        self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
-
-        self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias)
-
+        self.dwconv_l = nn.Conv2d(hidden_features, hidden_features, kernel_size=3, stride=1, padding=1, bias=bias, groups=hidden_features)
+        #self.dwconv_l = nn.Conv2d(hidden_features, hidden_features, kernel_size=3, stride=1, padding=1, bias=bias)
+        self.gelu_l = nn.GELU()
+        
         self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
 
     def forward(self, x):
-        x = self.project_in(x)
-        x1, x2 = self.dwconv(x).chunk(2, dim=1)
-        x = F.gelu(x1) * x2
-        x = self.project_out(x)
-        return x
-"""
+        x_in = self.project_in(x)
+        xl = self.pool_h(x_in)
+        xh = x_in - xl
+        xh = self.gelu_h(self.conv_h(xh))
+        xl = self.gelu_l(self.dwconv_l(xl))
+        x_out = self.project_out(xl+xh)
+        return x_out
 
 class TransBlock(nn.Module):
     def __init__(self, dim, num_heads, kernel, dilation, ffn_expansion_factor, bias, sa=True):
@@ -317,9 +279,8 @@ class Embeddings_output(nn.Module):
         self.activation = nn.LeakyReLU(0.2, True)
         
         self.de_trans_level3 = nn.Sequential(*[
-            item for sublist in 
-            [[TransBlock(dim*2**2, heads[2], 7, 1, 0.59, bias=bias),
-             TransBlock(dim*2**2, heads[2], 7, 4, 0.59, bias=bias)] for i in range(num_blocks[2]//2)] for item in sublist
+            TransBlock(dim*2**2, heads[2], 7, 4, 1, bias=bias) for i in 
+            range(num_blocks[2])
         ])
         
         self.up3_2 = nn.Sequential(
@@ -330,9 +291,8 @@ class Embeddings_output(nn.Module):
         self.fusion_level2 = GatedFusion(dim*4, dim*2, 1, bias)
 
         self.de_trans_level2 = nn.Sequential(*[
-            item for sublist in 
-            [[TransBlock(dim*2, heads[1], 7, 1, 0.59, bias=bias),
-             TransBlock(dim*2, heads[1], 7, 8, 0.59, bias=bias)] for i in range(num_blocks[1]//2)] for item in sublist
+            TransBlock(dim*2, heads[1], 7, 8, 1, bias=bias) for i in 
+            range(num_blocks[1])
         ])
 
         self.up2_1 = nn.Sequential(
@@ -342,17 +302,14 @@ class Embeddings_output(nn.Module):
 
         self.fusion_level1 = GatedFusion(dim*2, dim*1, 1, bias)
 
-
         self.de_trans_level1 = nn.Sequential(*[
-            item for sublist in 
-            [[TransBlock(dim, heads[0], 7, 1, 0.59, bias=bias),
-             TransBlock(dim, heads[0], 7, 16, 0.59, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
+            TransBlock(dim, heads[0], 7, 16, 1, bias=bias) for i in 
+            range(num_blocks[0])
         ])
         
         self.refinement = nn.Sequential(*[
-            item for sublist in 
-            [[TransBlock(dim, heads[0], 7, 1, 0.59, bias=bias),
-             TransBlock(dim, heads[0], 7, 16, 0.59, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
+            TransBlock(dim, heads[0], 7, 16, 1, bias=bias) for i in 
+            range(num_refinement_blocks)
         ])
         self.output = nn.Sequential(
             nn.Conv2d(dim, 3, kernel_size=3, padding=1, bias=bias),
@@ -437,5 +394,4 @@ pytorch_total_params = sum(p.numel() for p in model.parameters())
 print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
-#print(model)
 """
