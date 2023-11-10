@@ -75,41 +75,25 @@ class PEG(nn.Module):
         x = self.PEG(x) + x
         return x
 
-# RFM (Residual fusion module, multi-scale)
-class RFM(nn.Module):
-    def __init__(self, in_dim, out_dim, num_heads, kernel, dilation, ffn_expansion_factor, bias):
-        super(RFM, self).__init__()
-        self.ResEmbedding = nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, groups=in_dim),
+# Gated-Dconv Fusion Block (GDFB)
+class GatedFusion(nn.Module):
+    def __init__(self, in_dim, out_dim, ffn_expansion_factor, bias):
+        super(GatedFusion, self).__init__()
+        self.project_in = nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, groups=in_dim),
                                           nn.Conv2d(in_dim, out_dim, kernel_size=1))
-        self.FusionBlock = TransBlock(out_dim, num_heads, kernel, 
-                                      dilation, ffn_expansion_factor, bias, sa=False)
+        self.norm = LayerNorm(out_dim, LayerNorm_type = 'BiasFree')
+        self.ffn = GDFN(out_dim, ffn_expansion_factor, bias)
         
-    def forward(self, x1, x2, x3):
-        x = torch.cat([x1, x2, x3], dim=1)
-        x = self.ResEmbedding(x)
-        x = self.FusionBlock(x)
-        return x
-
-# RFM (Residual fusion module, multi-scale)
-class Fusion(nn.Module):
-    def __init__(self, in_dim, out_dim, num_heads, kernel, dilation, ffn_expansion_factor, bias):
-        super(Fusion, self).__init__()
-        self.ResEmbedding = nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, groups=in_dim),
-                                          nn.Conv2d(in_dim, out_dim, kernel_size=1))
-        self.FusionBlock = TransBlock(out_dim, num_heads, kernel, 
-                                      dilation, ffn_expansion_factor, bias, sa=False)
-        
-    def forward(self, x1, x2):
-        x = torch.cat([x1, x2], dim=1)
-        x = self.ResEmbedding(x)
-        x = self.FusionBlock(x)
+    def forward(self, x):
+        x = self.project_in(x)
+        x = x + self.ffn(self.norm(x))
         return x
         
     ##########################################################################
 ## Gated-Dconv Feed-Forward Network (GDFN)
-class FeedForward(nn.Module):
+class GDFN(nn.Module):
     def __init__(self, dim, ffn_expansion_factor, bias):
-        super(FeedForward, self).__init__()
+        super(GDFN, self).__init__()
 
         hidden_features = int(dim*ffn_expansion_factor)
 
@@ -126,6 +110,103 @@ class FeedForward(nn.Module):
         x = self.project_out(x)
         return x
 
+class ChannelAttention(nn.Module):
+    def __init__(self, k_size=3):
+        super(ChannelAttention, self).__init__()
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
+        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False) 
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        # feature descriptor on the global spatial information
+        y = self.max_pool(x)
+        # Two different branches of ECA module
+        y = self.conv(y.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)
+        # Multi-scale information fusion
+        y = self.sigmoid(y)
+
+        return x * y.expand_as(x)
+
+class SpatialAttention(nn.Module):
+    def __init__(self, kernel_size=7):
+        super(SpatialAttention, self).__init__()
+
+        self.conv = nn.Conv2d(1, 1, kernel_size, padding=kernel_size//2, bias=False)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        max_out, _ = torch.max(x, dim=1, keepdim=True)
+        max_out = self.conv(max_out)
+        return x * self.sigmoid(max_out)
+
+    ##########################################################################
+## High Freq Feed-Forward Network (HFFN)
+class HFFN(nn.Module):
+    def __init__(self, dim, ffn_expansion_factor, bias):
+        super(HFFN, self).__init__()
+
+        hidden_features = int(dim*ffn_expansion_factor)
+
+        self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
+        self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias)
+        
+        self.pool_h1 = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
+        self.conv_h1 = nn.Conv2d(hidden_features, hidden_features, kernel_size=1, stride=1, bias=bias)
+        
+        self.conv_h2 = nn.Conv2d(hidden_features, hidden_features, kernel_size=1, stride=1, bias=bias)
+        self.dwconv_h2 = nn.Conv2d(hidden_features, hidden_features, kernel_size=3, stride=1, padding=1, bias=bias, groups=hidden_features)
+        
+        self.project_out = nn.Conv2d(hidden_features*2, dim, kernel_size=1, bias=bias)
+
+    def forward(self, x):
+        x_in = self.project_in(x)
+        x1, x2 = self.dwconv(x_in).chunk(2, dim=1)
+        x1 = self.conv_h1(self.pool_h1(x1))
+        x2 = self.dwconv_h2(self.conv_h2(x2))
+        x_out = self.project_out(torch.cat((x1, x2), dim=1))
+        return x_out
+"""
+class HFFN(nn.Module):
+    def __init__(self, dim, ffn_expansion_factor, bias):
+        super(HFFN, self).__init__()
+
+        hidden_features = int(dim*ffn_expansion_factor)
+
+        self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
+        self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias)
+        self.ca = ChannelAttention()
+        self.sa = SpatialAttention()
+        self.project_out = nn.Conv2d(hidden_features*2, dim, kernel_size=1, bias=bias)
+
+    def forward(self, x):
+        x_in = self.project_in(x)
+        x1, x2 = self.dwconv(x_in).chunk(2, dim=1)
+        x1 = self.ca(x1)
+        x2 = self.sa(x2)
+        x_out = self.project_out(torch.cat((x1, x2), dim=1))
+        return x_out
+"""
+"""
+class HFFN(nn.Module):
+    def __init__(self, dim, ffn_expansion_factor, bias):
+        super(HFFN, self).__init__()
+
+        hidden_features = int(dim*ffn_expansion_factor)
+
+        self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
+
+        self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias)
+
+        self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
+
+    def forward(self, x):
+        x = self.project_in(x)
+        x1, x2 = self.dwconv(x).chunk(2, dim=1)
+        x = F.gelu(x1) * x2
+        x = self.project_out(x)
+        return x
+"""
+
 class TransBlock(nn.Module):
     def __init__(self, dim, num_heads, kernel, dilation, ffn_expansion_factor, bias, sa=True):
         super(TransBlock, self).__init__()
@@ -138,7 +219,7 @@ class TransBlock(nn.Module):
                                                 dilation=dilation, num_heads=num_heads)
             self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
-        self.ffn = FeedForward(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
+        self.ffn = HFFN(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
         self.sa = sa
 
     def forward(self, x):
@@ -236,8 +317,9 @@ class Embeddings_output(nn.Module):
         self.activation = nn.LeakyReLU(0.2, True)
         
         self.de_trans_level3 = nn.Sequential(*[
-            TransBlock(dim*2**2, heads[2], 7, 4, 1, bias=bias) for i in 
-            range(num_blocks[2])
+            item for sublist in 
+            [[TransBlock(dim*2**2, heads[2], 7, 1, 0.59, bias=bias),
+             TransBlock(dim*2**2, heads[2], 7, 4, 0.59, bias=bias)] for i in range(num_blocks[2]//2)] for item in sublist
         ])
         
         self.up3_2 = nn.Sequential(
@@ -245,11 +327,12 @@ class Embeddings_output(nn.Module):
             self.activation,
         )
 
-        self.fusion_level2 = Fusion(dim*4, dim*2, heads[1], 7, 8, 1, bias)
+        self.fusion_level2 = GatedFusion(dim*4, dim*2, 1, bias)
 
         self.de_trans_level2 = nn.Sequential(*[
-            TransBlock(dim*2, heads[1], 7, 8, 1, bias=bias) for i in 
-            range(num_blocks[1])
+            item for sublist in 
+            [[TransBlock(dim*2, heads[1], 7, 1, 0.59, bias=bias),
+             TransBlock(dim*2, heads[1], 7, 8, 0.59, bias=bias)] for i in range(num_blocks[1]//2)] for item in sublist
         ])
 
         self.up2_1 = nn.Sequential(
@@ -257,16 +340,19 @@ class Embeddings_output(nn.Module):
             self.activation,
         )
 
-        self.fusion_level1 = Fusion(dim*2, dim*1, heads[0], 7, 16, 1, bias)
+        self.fusion_level1 = GatedFusion(dim*2, dim*1, 1, bias)
+
 
         self.de_trans_level1 = nn.Sequential(*[
-            TransBlock(dim, heads[0], 7, 16, 1, bias=bias) for i in 
-            range(num_blocks[0])
+            item for sublist in 
+            [[TransBlock(dim, heads[0], 7, 1, 0.59, bias=bias),
+             TransBlock(dim, heads[0], 7, 16, 0.59, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
         ])
         
         self.refinement = nn.Sequential(*[
-            TransBlock(dim, heads[0], 7, 16, 1, bias=bias) for i in 
-            range(num_refinement_blocks)
+            item for sublist in 
+            [[TransBlock(dim, heads[0], 7, 1, 0.59, bias=bias),
+             TransBlock(dim, heads[0], 7, 16, 0.59, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
         ])
         self.output = nn.Sequential(
             nn.Conv2d(dim, 3, kernel_size=3, padding=1, bias=bias),
@@ -276,10 +362,10 @@ class Embeddings_output(nn.Module):
     def forward(self, x, residual_1, residual_2):
         hx = self.de_trans_level3(x)
         hx = self.up3_2(hx)
-        hx = self.fusion_level2(hx, residual_2)
+        hx = self.fusion_level2(torch.cat((hx, residual_2), dim=1))
         hx = self.de_trans_level2(hx)
         hx = self.up2_1(hx)
-        hx = self.fusion_level1(hx, residual_1)
+        hx = self.fusion_level1(torch.cat((hx, residual_1), dim=1))
         hx = self.de_trans_level1(hx)
         hx = self.refinement(hx)
         hx = self.output(hx)
@@ -301,7 +387,7 @@ print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
 """
-class NADeblur_V5(nn.Module):
+class NADeblur_V7(nn.Module):
     def __init__(self,
                  dim = 64, 
                  num_blocks = [4,6,8],
@@ -311,15 +397,12 @@ class NADeblur_V5(nn.Module):
                  dilation = 3, 
                  ffn_expansion_factor = 1, 
                  bias = False):
-        super(NADeblur_V5, self).__init__()
-
-        #self.dwt = DWT_2D(wave='haar')
-        #self.idwt = IDWT_2D(wave='haar')
+        super(NADeblur_V7, self).__init__()
         
         self.encoder = Embeddings(dim)
         #dim = 320
-        self.RFM1 = RFM(dim*7, dim*1, num_heads[0], 7, 16, ffn_expansion_factor, bias)
-        self.RFM2 = RFM(dim*7, dim*2, num_heads[1], 7, 8, ffn_expansion_factor, bias)
+        self.RFM1 = GatedFusion(dim*7, dim*1, ffn_expansion_factor, bias)
+        self.RFM2 = GatedFusion(dim*7, dim*2, ffn_expansion_factor, bias)
     
         self.decoder = Embeddings_output(dim, num_blocks, num_refinement_blocks, 
                                          num_heads, bias)
@@ -336,8 +419,8 @@ class NADeblur_V5(nn.Module):
         hx_2   = F.interpolate(hx, scale_factor=2)
         hx_1   = F.interpolate(hx_2, scale_factor=2)
         
-        res1 = self.RFM1(res1, res2_1, hx_1)
-        res2 = self.RFM2(res1_2, res2, hx_2)
+        res1 = self.RFM1(torch.cat((res1, res2_1, hx_1), dim=1))
+        res2 = self.RFM2(torch.cat((res1_2, res2, hx_2), dim=1))
 
         hx = self.decoder(hx, res1, res2)
 
@@ -346,7 +429,7 @@ class NADeblur_V5(nn.Module):
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
-model = NADeblur_V5().cuda()#.to(dtype=torch.float16)
+model = NADeblur_V7().cuda()#.to(dtype=torch.float16)
 out = model(inp)
 print(out.shape)
 print("--- %s seconds ---" % (time.time() - start_time))
@@ -354,4 +437,5 @@ pytorch_total_params = sum(p.numel() for p in model.parameters())
 print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
+#print(model)
 """
