@@ -145,7 +145,7 @@ class TransBlock(nn.Module):
                                                 dilation=dilation, num_heads=num_heads)
             self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
-        self.ffn = GDFN(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
+        self.ffn = DiGFFN(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
         self.sa = sa
 
     def forward(self, x):
