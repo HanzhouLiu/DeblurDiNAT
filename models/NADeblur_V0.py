@@ -80,8 +80,8 @@ class RFM(nn.Module):
     def __init__(self, in_dim, out_dim, num_heads, kernel, dilation, ffn_expansion_factor, bias):
         super(RFM, self).__init__()
         self.activation = nn.LeakyReLU(0.2, True)
-        self.conv1 = nn.Conv2d(in_dim, out_dim, kernel_size=1, stride=1, bias=bias)
-        self.conv2 = nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=bias)
+        self.conv1 = nn.Conv2d(in_dim, out_dim, kernel_size=1, stride=1)
+        self.conv2 = nn.Conv2d(out_dim, out_dim, kernel_size=3, stride=1, padding=1)
         
     def forward(self, x1, x2, x3):
         x = torch.cat([x1, x2, x3], dim=1)
@@ -316,8 +316,8 @@ class NADeblur_V0(nn.Module):
         
         self.encoder = Embeddings(dim)
         #dim = 320
-        self.RFM1 = RFM(dim*7, dim*1, num_heads[0], 7, 16, ffn_expansion_factor, bias)
-        self.RFM2 = RFM(dim*7, dim*2, num_heads[1], 7, 8, ffn_expansion_factor, bias)
+        self.RFM1 = RFM(dim*7, dim*1, num_heads[0], 7, 16, ffn_expansion_factor, bias=bias)
+        self.RFM2 = RFM(dim*7, dim*2, num_heads[1], 7, 8, ffn_expansion_factor, bias=bias)
     
         self.decoder = Embeddings_output(dim, num_blocks, num_refinement_blocks, 
                                          num_heads, bias)
@@ -344,7 +344,7 @@ class NADeblur_V0(nn.Module):
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
-model = NADeblur_V1().cuda()#.to(dtype=torch.float16)
+model = NADeblur_V0().cuda()#.to(dtype=torch.float16)
 out = model(inp)
 print(out.shape)
 print("--- %s seconds ---" % (time.time() - start_time))
