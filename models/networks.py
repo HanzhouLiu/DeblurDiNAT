@@ -29,7 +29,7 @@ def get_generator(model_config):
     elif generator_name == 'NADeblur_V10':
         model_g = NADeblur_V10.NADeblur_V10()
     elif generator_name == 'NADeblur_V11':
-        model_g = NADeblur_V10.NADeblur_V11()
+        model_g = NADeblur_V11.NADeblur_V11()
     else:
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
     return nn.DataParallel(model_g)
