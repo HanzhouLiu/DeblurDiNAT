@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numbers
 #from models.torch_wavelets import DWT_2D, IDWT_2D
 from natten import NeighborhoodAttention1D, NeighborhoodAttention2D
-from base_networks import Encoder_MDCBlock1, Decoder_MDCBlock1
+from models.base_networks import Encoder_MDCBlock1, Decoder_MDCBlock1
 from einops import rearrange
 
 ##########################################################################
