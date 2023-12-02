@@ -309,8 +309,6 @@ class Embeddings_output(nn.Module):
             self.activation,
         )
 
-        self.fusion_level2 = Fusion(n_feat=dim*2, bias=bias)
-
         self.de_trans_level2 = nn.Sequential(*[
             TransBlock(dim*2, heads[1], 7, 8, 1, bias=bias) for i in 
             range(num_blocks[1])
@@ -320,8 +318,6 @@ class Embeddings_output(nn.Module):
             nn.ConvTranspose2d(dim*2, dim, kernel_size=4, stride=2, padding=1, bias=bias),
             self.activation,
         )
-
-        self.fusion_level1 = Fusion(n_feat=dim, bias=bias)
 
         self.de_trans_level1 = nn.Sequential(*[
             TransBlock(dim, heads[0], 7, 16, 1, bias=bias) for i in 
