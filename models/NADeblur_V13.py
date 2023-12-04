@@ -341,7 +341,7 @@ print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
 """
-class NADeblur_V12(nn.Module):
+class NADeblur_V13(nn.Module):
     def __init__(self,
                  dim = 64, 
                  num_blocks = [4,6,8],
@@ -351,7 +351,7 @@ class NADeblur_V12(nn.Module):
                  dilation = 3, 
                  ffn_expansion_factor = 1, 
                  bias = False):
-        super(NADeblur_V12, self).__init__()
+        super(NADeblur_V13, self).__init__()
         
         self.encoder = Embeddings(dim)
         #dim = 320
