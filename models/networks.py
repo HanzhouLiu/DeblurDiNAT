@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from models import Stripformer, NADeblur_V0, NADeblur_V1, NADeblur_V2, NADeblur_V3, NADeblur_V4, NADeblur_V5, NADeblur_V6, NADeblur_V7, NADeblur_V8, NADeblur_V9, NADeblur_V10, NADeblur_V11, NADeblur_V12, NADeblur_V13
+from models import Stripformer, NADeblur_V0, NADeblur_V1, NADeblur_V2, NADeblur_V3, NADeblur_V4, NADeblur_V5, NADeblur_V6, NADeblur_V7, NADeblur_V8, NADeblur_V9, NADeblur_V10, NADeblur_V11, NADeblur_V12, NADeblur_V13, NADeblur_V14
 
 def get_generator(model_config):
     generator_name = model_config['g_name']
@@ -34,6 +34,8 @@ def get_generator(model_config):
         model_g = NADeblur_V12.NADeblur_V12()
     elif generator_name == 'NADeblur_V13':
         model_g = NADeblur_V13.NADeblur_V13()
+    elif generator_name == 'NADeblur_V14':
+        model_g = NADeblur_V14.NADeblur_V14()
     else:
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
     return nn.DataParallel(model_g)
