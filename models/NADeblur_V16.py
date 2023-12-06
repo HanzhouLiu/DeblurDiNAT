@@ -112,7 +112,7 @@ class GDFN(nn.Module):
 
 
     ##########################################################################
-## Enhanced Gated-Dconv Feed-Forward Network (EGDFN)
+## Enhanced Gated-Dconv Feed-Forward Network (EGDFN) Series
 class EGDFN(nn.Module):
     def __init__(self, dim, ffn_expansion_factor, bias):
         super(EGDFN, self).__init__()
