@@ -131,8 +131,8 @@ class EGDFN(nn.Module):
 
     def forward(self, x):
         x = self.project_in(x)
-        x = x*self.sigmoid(self.pwconv(x))
-        x1, x2 = self.dwconv(x).chunk(2, dim=1)
+        score = self.sigmoid(self.pwconv(x))
+        x1, x2 = (self.dwconv(x)*score).chunk(2, dim=1)
         x = F.gelu(x1) * x2
         x = self.project_out(x)
         return x
