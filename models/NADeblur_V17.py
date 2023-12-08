@@ -112,7 +112,7 @@ class GDFN(nn.Module):
 
 
     ##########################################################################
-## Enhanced Gated-Dconv Feed-Forward Network (EGDFN) Parallel
+## Enhanced Gated-Dconv Feed-Forward Network (EGDFN) Series
 class EGDFN(nn.Module):
     def __init__(self, dim, ffn_expansion_factor, bias):
         super(EGDFN, self).__init__()
@@ -120,19 +120,19 @@ class EGDFN(nn.Module):
         hidden_features = int(dim*ffn_expansion_factor)
 
         self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
-
-        self.pwconv = nn.Conv2d(hidden_features*2, 1, kernel_size=1, bias=bias)
-        
-        self.sigmoid = nn.Sigmoid()
         
         self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias)
 
         self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
 
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.conv = nn.Conv1d(1, 1, kernel_size=3, padding=1, bias=False)
+        self.sigmoid = nn.Sigmoid()
+
     def forward(self, x):
         x = self.project_in(x)
-        score = self.chan_mod(x)
-        x1, x2 = (self.dwconv(x)*score).chunk(2, dim=1)
+        x = x*self.chan_mod(x)
+        x1, x2 = self.dwconv(x).chunk(2, dim=1)
         x = F.gelu(x1) * x2
         x = self.project_out(x)
         return x
@@ -142,7 +142,6 @@ class EGDFN(nn.Module):
         score = self.conv(score.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)
         score = self.sigmoid(score)
         return score.expand_as(x)
-
 
 class TransBlock(nn.Module):
     def __init__(self, dim, num_heads, kernel, dilation, ffn_expansion_factor, bias, sa=True):
@@ -394,7 +393,7 @@ class NADeblur_V17(nn.Module):
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
-model = NADeblur_V15().cuda()#.to(dtype=torch.float16)
+model = NADeblur_V17().cuda()#.to(dtype=torch.float16)
 out = model(inp)
 print(out.shape)
 print("--- %s seconds ---" % (time.time() - start_time))

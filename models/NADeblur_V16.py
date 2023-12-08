@@ -120,23 +120,28 @@ class EGDFN(nn.Module):
         hidden_features = int(dim*ffn_expansion_factor)
 
         self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
-
-        self.pwconv = nn.Conv2d(hidden_features*2, 1, kernel_size=1, bias=bias)
-        
-        self.sigmoid = nn.Sigmoid()
         
         self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias)
 
         self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
 
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.conv = nn.Conv1d(1, 1, kernel_size=3, padding=1, bias=False)
+        self.sigmoid = nn.Sigmoid()
+
     def forward(self, x):
         x = self.project_in(x)
         x = self.dwconv(x)
-        x1, x2 = (x*self.sigmoid(self.pwconv(x))).chunk(2, dim=1)
+        x1, x2 = (x*self.chan_mod(x)).chunk(2, dim=1)
         x = F.gelu(x1) * x2
         x = self.project_out(x)
         return x
 
+    def chan_mod(self, x):
+        score = self.pool(x)
+        score = self.conv(score.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)
+        score = self.sigmoid(score)
+        return score.expand_as(x)
 
 class TransBlock(nn.Module):
     def __init__(self, dim, num_heads, kernel, dilation, ffn_expansion_factor, bias, sa=True):
