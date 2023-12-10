@@ -182,14 +182,17 @@ class TransBlock(nn.Module):
             self.conv = nn.Conv1d(1, 1, kernel_size=3, padding=1, bias=False)
             self.sigmoid = nn.Sigmoid()
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
-        self.ffn = EGDFN(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
+        self.ffn = GDFN(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
+        self.conv = nn.Conv2d(2, 1, kernel_size=7, padding=(7 - 1) // 2, bias=False) 
+        self.sigmoid = nn.Sigmoid()
         self.sa = sa
 
     def forward(self, x):
         if self.sa == True:
             x_norm1 = self.norm1(x)
             x = x + self.attn(x_norm1)*self.chan_mod(x_norm1)
-        x = x + self.ffn(self.norm2(x))
+        x_ffn = self.ffn(self.norm2(x))
+        x = x + x_ffn * self.spatial_mod(x_ffn)
 
         return x
 
@@ -206,6 +209,14 @@ class TransBlock(nn.Module):
         score = self.sigmoid(score)
         return score.expand_as(x)
         
+
+    def spatial_mod(self, x):
+        avg_out = torch.mean(x, dim=1, keepdim=True)
+        max_out, _ = torch.max(x, dim=1, keepdim=True)
+        out = torch.cat([avg_out, max_out], dim=1)
+        out = self.sigmoid(self.conv(out))
+        return out
+
 
 class SpatialAttention(nn.Module):
     def __init__(self, k_size=3):
@@ -410,7 +421,7 @@ class NADeblur_V20(nn.Module):
         hx = self.decoder(hx, res1, res2)
 
         return hx + x
-
+"""
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
@@ -422,4 +433,4 @@ pytorch_total_params = sum(p.numel() for p in model.parameters())
 print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
-
+"""
