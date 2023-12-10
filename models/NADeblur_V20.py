@@ -183,7 +183,7 @@ class TransBlock(nn.Module):
             self.sigmoid = nn.Sigmoid()
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.ffn = GDFN(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
-        self.conv = nn.Conv2d(2, 1, kernel_size=7, padding=(7 - 1) // 2, bias=False) 
+        self.conv2 = nn.Conv2d(2, 1, kernel_size=7, padding=(7 - 1) // 2, bias=False) 
         self.sigmoid = nn.Sigmoid()
         self.sa = sa
 
@@ -214,7 +214,7 @@ class TransBlock(nn.Module):
         avg_out = torch.mean(x, dim=1, keepdim=True)
         max_out, _ = torch.max(x, dim=1, keepdim=True)
         out = torch.cat([avg_out, max_out], dim=1)
-        out = self.sigmoid(self.conv(out))
+        out = self.sigmoid(self.conv2(out))
         return out
 
 
