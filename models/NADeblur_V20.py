@@ -132,7 +132,7 @@ class EGDFN(nn.Module):
     def forward(self, x):
         x = self.project_in(x)
         x_dw = self.dwconv(x)
-        x1, x2 = x_dw * self.spatial_attn(x_dw).chunk(2, dim=1)
+        x1, x2 = (x_dw * self.spatial_attn(x_dw)).chunk(2, dim=1)
         x = F.gelu(x1) * x2
         x = self.project_out(x)
         return x
@@ -410,11 +410,11 @@ class NADeblur_V20(nn.Module):
         hx = self.decoder(hx, res1, res2)
 
         return hx + x
-"""
+
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
-model = NADeblur_V19().cuda()#.to(dtype=torch.float16)
+model = NADeblur_V20().cuda()#.to(dtype=torch.float16)
 out = model(inp)
 print(out.shape)
 print("--- %s seconds ---" % (time.time() - start_time))
@@ -422,4 +422,4 @@ pytorch_total_params = sum(p.numel() for p in model.parameters())
 print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
-"""
+
