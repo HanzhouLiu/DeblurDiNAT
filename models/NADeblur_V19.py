@@ -191,7 +191,7 @@ class TransBlock(nn.Module):
             x_norm1 = self.norm1(x)
             x = x + self.attn(x_norm1)*self.chan_mod(x_norm1)
         x_norm2 = self.norm2(x)
-        x = x + self.ffn(self.norm2)*self.spatial_mod(x_norm2)
+        x = x + self.ffn(x_norm2)*self.spatial_mod(x_norm2)
 
         return x
 
