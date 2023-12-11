@@ -112,10 +112,10 @@ class GDFN(nn.Module):
 
 
     ##########################################################################
-## E-Gated-Dconv Feed-Forward Network (EGDFN)
-class EGDFN(nn.Module):
+## Dual Branch Gated-Dconv Feed-Forward Network (DBGDFN)
+class DBGDFN(nn.Module):
     def __init__(self, dim, ffn_expansion_factor, bias):
-        super(EGDFN, self).__init__()
+        super(DBGDFN, self).__init__()
 
         hidden_features = int(dim*ffn_expansion_factor)
 
@@ -123,26 +123,22 @@ class EGDFN(nn.Module):
 
         self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias)
 
-        self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
+        self.dwconv_branch2 = nn.Conv2d(hidden_features, hidden_features, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias)
+        
+        self.group_conv = nn.Conv2d(hidden_features*2, hidden_features, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias)
+        
+        self.project_out = nn.Conv2d(hidden_features*1, dim, kernel_size=1, bias=bias)
 
-        self.conv = nn.Conv2d(2, 1, kernel_size=7, padding=(7 - 1) // 2, bias=False) 
-        
-        self.sigmoid = nn.Sigmoid()
-        
     def forward(self, x):
         x = self.project_in(x)
-        x_dw = self.dwconv(x)
-        x1, x2 = (x_dw * self.spatial_attn(x_dw)).chunk(2, dim=1)
-        x = F.gelu(x1) * x2
+        x1, x2 = self.dwconv(x).chunk(2, dim=1)
+        x2 = self.dwconv_branch2(x2)
+        x1 = F.gelu(x1) * x2
+        x2 = F.gelu(x2) * x1
+        x = self.group_conv(torch.cat((x1,x2),dim=1))
         x = self.project_out(x)
+        #x = self.project_out(x1+x2)
         return x
-
-    def spatial_attn(self, x):
-        avg_out = torch.mean(x, dim=1, keepdim=True)
-        max_out, _ = torch.max(x, dim=1, keepdim=True)
-        out = torch.cat([avg_out, max_out], dim=1)
-        out = self.sigmoid(self.conv(out))
-        return out
 
 
     ##########################################################################
@@ -182,17 +178,14 @@ class TransBlock(nn.Module):
             self.conv = nn.Conv1d(1, 1, kernel_size=3, padding=1, bias=False)
             self.sigmoid = nn.Sigmoid()
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
-        self.ffn = GDFN(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
-        self.conv2 = nn.Conv2d(2, 1, kernel_size=7, padding=(7 - 1) // 2, bias=False) 
-        self.sigmoid = nn.Sigmoid()
+        self.ffn = DBGDFN(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
         self.sa = sa
 
     def forward(self, x):
         if self.sa == True:
             x_norm1 = self.norm1(x)
             x = x + self.attn(x_norm1)*self.chan_mod(x_norm1)
-        x_ffn = self.ffn(self.norm2(x))
-        x = x + x_ffn * self.spatial_mod(x_ffn)
+        x = x + self.ffn(self.norm2(x))
 
         return x
 
@@ -210,27 +203,22 @@ class TransBlock(nn.Module):
         return score.expand_as(x)
         
 
-    def spatial_mod(self, x):
-        avg_out = torch.mean(x, dim=1, keepdim=True)
-        max_out, _ = torch.max(x, dim=1, keepdim=True)
-        out = torch.cat([avg_out, max_out], dim=1)
-        out = self.sigmoid(self.conv2(out))
-        return out
-
-
-class SpatialAttention(nn.Module):
+class ChannelAttention(nn.Module):
     def __init__(self, k_size=3):
-        super(SpatialAttention, self).__init__()
-        self.conv = nn.Conv2d(2, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False) 
+        super(ChannelAttention, self).__init__()
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
+        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False) 
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        avg_out = torch.mean(x, dim=1, keepdim=True)
-        max_out, _ = torch.max(x, dim=1, keepdim=True)
-        out = torch.cat([avg_out, max_out], dim=1)
-        out = self.sigmoid(self.conv(out))
-        return out
+        # feature descriptor on the global spatial information
+        y = self.max_pool(x)
+        # Two different branches of ECA module
+        y = self.conv(y.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)
+        # Multi-scale information fusion
+        y = self.sigmoid(y)
 
+        return x * y.expand_as(x)
 
 class Embeddings(nn.Module):
     def __init__(self, dim):

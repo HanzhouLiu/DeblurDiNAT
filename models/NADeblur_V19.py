@@ -406,7 +406,7 @@ class NADeblur_V19(nn.Module):
         hx = self.decoder(hx, res1, res2)
 
         return hx + x
-
+"""
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
@@ -418,4 +418,4 @@ pytorch_total_params = sum(p.numel() for p in model.parameters())
 print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
-
+"""
