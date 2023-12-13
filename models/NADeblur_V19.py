@@ -119,28 +119,30 @@ class DBGDFN(nn.Module):
 
         hidden_features = int(dim*ffn_expansion_factor)
 
-        self.projIn_br1 = nn.Conv2d(dim, hidden_features*1, kernel_size=1, bias=bias)
-        
-        self.projIn_br2 = nn.Conv2d(dim, hidden_features*1, kernel_size=1, bias=bias)
+        self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
 
+        self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias)
+        
         self.dwconv_br1 = nn.Conv2d(hidden_features, hidden_features, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias)
         
-        #self.dwconv_br2 = nn.Conv2d(hidden_features, hidden_features, kernel_size=5, stride=1, padding=2, groups=hidden_features, bias=bias)
         self.dwconv_br2 = nn.Sequential(
             nn.Conv2d(hidden_features, hidden_features, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias),
             nn.Conv2d(hidden_features, hidden_features, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias)
         )
         
+        self.group_conv = nn.Conv2d(hidden_features*2, hidden_features, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias)
+        
         self.project_out = nn.Conv2d(hidden_features*1, dim, kernel_size=1, bias=bias)
 
     def forward(self, x):
-        x1 = self.projIn_br1(x)
-        x2 = self.projIn_br2(x)
-        x1 = self.dwconv_br1(x)
-        x2 = self.dwconv_br2(x)
+        x = self.project_in(x)
+        x1, x2 = self.dwconv(x).chunk(2, dim=1)
+        x1 = self.dwconv_br1(x1)
+        x2 = self.dwconv_br2(x1)
         x1 = F.gelu(x1) * x2
         x2 = F.gelu(x2) * x1
-        x = self.project_out(x1+x2)
+        x = self.group_conv(torch.cat((x1,x2),dim=1))
+        x = self.project_out(x)
         #x = self.project_out(x1+x2)
         return x
 
@@ -413,7 +415,7 @@ class NADeblur_V19(nn.Module):
         hx = self.decoder(hx, res1, res2)
 
         return hx + x
-
+"""
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
@@ -425,4 +427,4 @@ pytorch_total_params = sum(p.numel() for p in model.parameters())
 print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
-
+"""
