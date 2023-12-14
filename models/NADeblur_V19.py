@@ -122,10 +122,10 @@ class DBGDFN(nn.Module):
         self.project_in = nn.Conv2d(dim, hidden_features*1, kernel_size=1, bias=bias)
         
         self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias)
-        
+        #self.pwconv = nn.Conv2d(hidden_features*2, hidden_features*1, kernel_size=1, bias=bias)
         #self.group_conv = nn.Conv2d(hidden_features*2, hidden_features, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias)
         
-        self.project_out = nn.Conv2d(hidden_features*1, dim, kernel_size=1, bias=bias)
+        self.project_out = nn.Conv2d(hidden_features*2, dim, kernel_size=1, bias=bias)
 
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.conv = nn.Conv1d(1, 1, kernel_size=3, padding=(3 - 1) // 2, bias=False) 
@@ -138,17 +138,13 @@ class DBGDFN(nn.Module):
         x1 = self.chan(x)
         x2 = self.spatial(x)
         x = self.dwconv(torch.cat((x1, x2), dim=1))
-        x1, x2 = x.chunk(2, dim=1)
-        x = F.gelu(x1) * x2
+        #x = self.pwconv(x)
         x = self.project_out(x)
         return x
     
     def chan(self, x):
-        # feature descriptor on the global spatial information
         y = self.pool(x)
-        # Two different branches of ECA module
         y = self.conv(y.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)
-        # Multi-scale information fusion
         y = F.sigmoid(y)
 
         return x * y.expand_as(x)
@@ -428,7 +424,7 @@ class NADeblur_V19(nn.Module):
         hx = self.decoder(hx, res1, res2)
 
         return hx + x
-"""
+
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
@@ -440,4 +436,4 @@ pytorch_total_params = sum(p.numel() for p in model.parameters())
 print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
-"""
+
