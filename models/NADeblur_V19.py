@@ -123,9 +123,9 @@ class DBGDFN(nn.Module):
 
         self.dwconv_br1 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias, dilation=1)
         
-        self.dwconv_br2 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias, dilation=2)
+        self.dwconv_br2 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=2, groups=hidden_features*2, bias=bias, dilation=2)
         
-        self.dwconv_br3 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias, dilation=3)
+        self.dwconv_br3 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=3, groups=hidden_features*2, bias=bias, dilation=3)
 
         self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
 
@@ -384,7 +384,7 @@ class NADeblur_V19(nn.Module):
         hx = self.decoder(hx, res1, res2)
 
         return hx + x
-
+"""
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
@@ -396,4 +396,4 @@ pytorch_total_params = sum(p.numel() for p in model.parameters())
 print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
-
+"""
