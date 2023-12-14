@@ -120,60 +120,19 @@ class DBGDFN(nn.Module):
         hidden_features = int(dim*ffn_expansion_factor)
 
         self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
+
+        self.dwconv_br1 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias, dilation=1)
         
-        self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias)
-        #self.pwconv = nn.Conv2d(hidden_features*2, hidden_features*1, kernel_size=1, bias=bias)
-        #self.group_conv = nn.Conv2d(hidden_features*2, hidden_features, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias)
+        self.dwconv_br2 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias, dilation=2)
         
-        self.project_out = nn.Conv2d(hidden_features*1, dim, kernel_size=1, bias=bias)
-
-        self.pool = nn.AdaptiveAvgPool2d(1)
-        self.conv = nn.Conv1d(1, 1, kernel_size=3, padding=(3 - 1) // 2, bias=False) 
-        
-        self.spatial_conv = nn.Conv2d(hidden_features*2, 1, kernel_size=1, bias=False)
-    
-    def forward(self, x):
-        x = self.project_in(x)
-        #x1, x2 = self.dwconv(x).chunk(2, dim=1)
-        x1 = self.chan(x)
-        x2 = self.spatial(x)
-        x = self.dwconv(x1 + x2)
-        x1, x2 = self.dwconv(x).chunk(2, dim=1)
-        x = F.gelu(x1) * x2
-        x = self.project_out(x)
-        return x
-    
-    def chan(self, x):
-        y = self.pool(x)
-        y = self.conv(y.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)
-        y = F.sigmoid(y)
-
-        return x * y.expand_as(x)
-    
-    def spatial(self, x):
-        y = self.spatial_conv(x)
-        y = F.sigmoid(y)
-        
-        return x * y
-
-
-    ##########################################################################
-## Dilated Gated-Dconv Feed-Forward Network (DiGFFN)
-class DiGFFN(nn.Module):
-    def __init__(self, dim, ffn_expansion_factor, bias):
-        super(DiGFFN, self).__init__()
-
-        hidden_features = int(dim*ffn_expansion_factor)
-
-        self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
-
-        self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=2, groups=hidden_features*2, bias=bias, dilation=2)
+        self.dwconv_br3 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias, dilation=3)
 
         self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
 
     def forward(self, x):
         x = self.project_in(x)
-        x1, x2 = self.dwconv(x).chunk(2, dim=1)
+        x = self.dwconv_br1(x) + self.dwconv_br2(x) + self.dwconv_br3(x)
+        x1, x2 = x.chunk(2, dim=1)
         x = F.gelu(x1) * x2
         x = self.project_out(x)
         return x
