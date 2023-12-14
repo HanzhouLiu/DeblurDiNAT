@@ -119,26 +119,27 @@ class DBGDFN(nn.Module):
 
         hidden_features = int(dim*ffn_expansion_factor)
 
-        self.project_in = nn.Conv2d(dim, hidden_features*1, kernel_size=1, bias=bias)
+        self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
         
         self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias)
         #self.pwconv = nn.Conv2d(hidden_features*2, hidden_features*1, kernel_size=1, bias=bias)
         #self.group_conv = nn.Conv2d(hidden_features*2, hidden_features, kernel_size=3, stride=1, padding=1, groups=hidden_features, bias=bias)
         
-        self.project_out = nn.Conv2d(hidden_features*2, dim, kernel_size=1, bias=bias)
+        self.project_out = nn.Conv2d(hidden_features*1, dim, kernel_size=1, bias=bias)
 
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.conv = nn.Conv1d(1, 1, kernel_size=3, padding=(3 - 1) // 2, bias=False) 
         
-        self.spatial_conv = nn.Conv2d(hidden_features, 1, kernel_size=1, bias=False)
+        self.spatial_conv = nn.Conv2d(hidden_features*2, 1, kernel_size=1, bias=False)
     
     def forward(self, x):
         x = self.project_in(x)
         #x1, x2 = self.dwconv(x).chunk(2, dim=1)
         x1 = self.chan(x)
         x2 = self.spatial(x)
-        x = self.dwconv(torch.cat((x1, x2), dim=1))
-        #x = self.pwconv(x)
+        x = self.dwconv(x1 + x2)
+        x1, x2 = self.dwconv(x).chunk(2, dim=1)
+        x = F.gelu(x1) * x2
         x = self.project_out(x)
         return x
     
