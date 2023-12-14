@@ -123,17 +123,17 @@ class DBGDFN(nn.Module):
 
         self.dwconv_br1 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias, dilation=1)
         
-        self.dwconv_br2 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=2, groups=hidden_features*2, bias=bias, dilation=2)
+        #self.dwconv_br2 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=2, groups=hidden_features*2, bias=bias, dilation=2)
         
-        self.dwconv_br3 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=3, groups=hidden_features*2, bias=bias, dilation=3)
+        #self.dwconv_br3 = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=3, groups=hidden_features*2, bias=bias, dilation=3)
 
         self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
 
     def forward(self, x):
         x = self.project_in(x)
-        x = self.dwconv_br1(x) + self.dwconv_br2(x) + self.dwconv_br3(x)
+        x = self.dwconv_br1(x)
         x1, x2 = x.chunk(2, dim=1)
-        x = F.gelu(x1) * x2
+        x = x1 * x2
         x = self.project_out(x)
         return x
 
