@@ -138,60 +138,36 @@ class DBGDFN(nn.Module):
         return x
 
 
-##########################################################################
-## Multi-DConv Head Transposed Self-Attention (MDTA)
-class Attention(nn.Module):
-    def __init__(self, dim, num_heads, bias):
-        super(Attention, self).__init__()
-        self.num_heads = num_heads
-        self.temperature = nn.Parameter(torch.ones(num_heads, 1, 1))
-
-        self.qkv = nn.Conv2d(dim, dim*3, kernel_size=1, bias=bias)
-        self.qkv_dwconv = nn.Conv2d(dim*3, dim*3, kernel_size=3, stride=1, padding=1, groups=dim*3, bias=bias)
-        self.project_out = nn.Conv2d(dim, dim, kernel_size=1, bias=bias)
-        
-
-
-    def forward(self, x):
-        b,c,h,w = x.shape
-
-        qkv = self.qkv_dwconv(self.qkv(x))
-        q,k,v = qkv.chunk(3, dim=1)   
-        
-        q = rearrange(q, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
-        k = rearrange(k, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
-        v = rearrange(v, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
-
-        q = torch.nn.functional.normalize(q, dim=-1)
-        k = torch.nn.functional.normalize(k, dim=-1)
-
-        attn = (q @ k.transpose(-2, -1)) * self.temperature
-        attn = attn.softmax(dim=-1)
-
-        out = (attn @ v)
-        
-        out = rearrange(out, 'b head c (h w) -> b (head c) h w', head=self.num_heads, h=h, w=w)
-
-        out = self.project_out(out)
-        return out
-
-
-
-##########################################################################
 class TransBlock(nn.Module):
-    def __init__(self, dim, num_heads, ffn_expansion_factor, bias):
+    def __init__(self, dim, num_heads, kernel, dilation, ffn_expansion_factor, bias, sa=True):
         super(TransBlock, self).__init__()
 
-        self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
-        self.attn = Attention(dim, num_heads, bias)
+        if sa == True:
+            self.heads = num_heads
+            self.kernel = kernel
+            self.dilation = dilation
+            self.na2d = NeighborhoodAttention2D(dim=dim, kernel_size=kernel, 
+                                                dilation=dilation, num_heads=num_heads)
+            self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
-        self.ffn = DBGDFN(dim, ffn_expansion_factor, bias)
+        self.ffn = DBGDFN(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
+        self.sa = sa
 
     def forward(self, x):
-        x = x + self.attn(self.norm1(x))
+        if self.sa == True:
+            x_norm1 = self.norm1(x)
+            x = x + self.attn(x_norm1)
         x = x + self.ffn(self.norm2(x))
 
         return x
+
+    def attn(self, x):
+        # b, c, h, w -> b, h, w, c
+        x = x.permute(0, 2, 3, 1)
+        x = self.na2d(x)
+        x = x.permute(0, 3, 1, 2)
+        return x
+        
 
 class Embeddings(nn.Module):
     def __init__(self, dim):
@@ -275,8 +251,8 @@ class Embeddings_output(nn.Module):
         
         self.de_trans_level3 = nn.Sequential(*[
             item for sublist in 
-            [[TransBlock(dim*2**2, heads[2], 1, bias=bias),
-             TransBlock(dim*2**2, heads[2], 1, bias=bias)] for i in range(num_blocks[2]//2)] for item in sublist
+            [[TransBlock(dim*2**2, heads[2], 7, 1, 1, bias=bias),
+             TransBlock(dim*2**2, heads[2], 7, 4, 1, bias=bias)] for i in range(num_blocks[2]//2)] for item in sublist
         ])
         
         self.up3_2 = nn.Sequential(
@@ -288,8 +264,8 @@ class Embeddings_output(nn.Module):
 
         self.de_trans_level2 = nn.Sequential(*[
             item for sublist in 
-            [[TransBlock(dim*2, heads[1], 1, bias=bias),
-             TransBlock(dim*2, heads[1], 1, bias=bias)] for i in range(num_blocks[1]//2)] for item in sublist
+            [[TransBlock(dim*2, heads[1], 7, 1, 1, bias=bias),
+             TransBlock(dim*2, heads[1], 7, 8, 1, bias=bias)] for i in range(num_blocks[1]//2)] for item in sublist
         ])
 
         self.up2_1 = nn.Sequential(
@@ -302,14 +278,14 @@ class Embeddings_output(nn.Module):
 
         self.de_trans_level1 = nn.Sequential(*[
             item for sublist in 
-            [[TransBlock(dim, heads[0], 1, bias=bias),
-             TransBlock(dim, heads[0], 1, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
+            [[TransBlock(dim, heads[0], 7, 1, 1, bias=bias),
+             TransBlock(dim, heads[0], 7, 16, 1, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
         ])
         
         self.refinement = nn.Sequential(*[
             item for sublist in 
-            [[TransBlock(dim, heads[0], 1, bias=bias),
-             TransBlock(dim, heads[0], 1, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
+            [[TransBlock(dim, heads[0], 7, 1, 1, bias=bias),
+             TransBlock(dim, heads[0], 7, 16, 1, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
         ])
         self.output = nn.Sequential(
             nn.Conv2d(dim, 3, kernel_size=3, padding=1, bias=bias),
@@ -344,8 +320,7 @@ print("--- {num} parameters ---".format(num = pytorch_total_params))
 pytorch_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("--- {num} trainable parameters ---".format(num = pytorch_trainable_params))
 """
-# compared to the self attention machanims in restormer
-class NADeblur_V21(nn.Module):
+class NADeblur_V22(nn.Module):
     def __init__(self,
                  dim = 64, 
                  num_blocks = [4,6,8],
@@ -355,7 +330,7 @@ class NADeblur_V21(nn.Module):
                  dilation = 3, 
                  ffn_expansion_factor = 1, 
                  bias = False):
-        super(NADeblur_V21, self).__init__()
+        super(NADeblur_V22, self).__init__()
         
         self.encoder = Embeddings(dim)
         #dim = 320
@@ -387,7 +362,7 @@ class NADeblur_V21(nn.Module):
 import time
 start_time = time.time()
 inp = torch.randn(1, 3, 256, 256).cuda()#.to(dtype=torch.float16)
-model = NADeblur_V21().cuda()#.to(dtype=torch.float16)
+model = NADeblur_V22().cuda()#.to(dtype=torch.float16)
 out = model(inp)
 print(out.shape)
 print("--- %s seconds ---" % (time.time() - start_time))
