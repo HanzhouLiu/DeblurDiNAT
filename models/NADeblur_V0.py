@@ -132,17 +132,15 @@ class TransBlock(nn.Module):
         self.dilation = dilation
         self.na2d = NeighborhoodAttention2D(dim=dim, kernel_size=kernel, 
                                             dilation=dilation, num_heads=num_heads)
-        self.fusion = Fusion(dim, bias)
         
         self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
         self.ffn = FeedForward(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
 
     def forward(self, x):
-        y = self.attn(self.norm1(x))
-        x = self.fusion(x, y)
-        y = self.ffn(self.norm2(x))
-        x = self.fusion(x, y)
+        x = x + self.attn(self.norm1(x))
+        x = x + self.ffn(self.norm2(x))
+
 
         return x
 
