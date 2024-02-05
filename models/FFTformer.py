@@ -215,7 +215,7 @@ class Upsample(nn.Module):
 
 ##########################################################################
 ##---------- FFTformer -----------------------
-class fftformer(nn.Module):
+class FFTformer(nn.Module):
     def __init__(self,
                  inp_channels=3,
                  out_channels=3,
@@ -225,7 +225,7 @@ class fftformer(nn.Module):
                  ffn_expansion_factor=3,
                  bias=False,
                  ):
-        super(fftformer, self).__init__()
+        super(FFTformer, self).__init__()
 
         self.patch_embed = OverlapPatchEmbed(inp_channels, dim)
 

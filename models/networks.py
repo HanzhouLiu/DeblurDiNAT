@@ -60,7 +60,7 @@ def get_generator(model_config):
     elif generator_name == 'NADeblurL':
         model_g = NADeblurL.NADeblurL()
     elif generator_name == 'FFTformer':
-        model_g = FFTformer.fftformer()
+        model_g = FFTformer.FFTformer()
     else:
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
     return nn.DataParallel(model_g)
