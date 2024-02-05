@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from models import MIMONet, MPRNet, Uformer, FFTformer, Stripformer, NADeblur_V0, NADeblur_V1, NADeblur_V2, NADeblur_V3, NADeblur_V4, NADeblur_V5, NADeblur_V6, NADeblur_V7, NADeblur_V8, NADeblur_V9, NADeblur_V10, NADeblur_V11, NADeblur_V12, NADeblur_V13, NADeblur_V14, NADeblur_V15, NADeblur_V16, NADeblur_V17, NADeblur_V18, NADeblur_V19, NADeblur_V20, NADeblur_V21, NADeblur_V22, NADeblur_V23, NADeblur_V24, NADeblur, NADeblurL
+from models import Restormer, MIMONet, MPRNet, Uformer, FFTformer, Stripformer, NADeblur_V0, NADeblur_V1, NADeblur_V2, NADeblur_V3, NADeblur_V4, NADeblur_V5, NADeblur_V6, NADeblur_V7, NADeblur_V8, NADeblur_V9, NADeblur_V10, NADeblur_V11, NADeblur_V12, NADeblur_V13, NADeblur_V14, NADeblur_V15, NADeblur_V16, NADeblur_V17, NADeblur_V18, NADeblur_V19, NADeblur_V20, NADeblur_V21, NADeblur_V22, NADeblur_V23, NADeblur_V24, NADeblur, NADeblurL
 def get_generator(model_config):
     generator_name = model_config['g_name']
     if generator_name == 'Stripformer':
@@ -67,6 +67,8 @@ def get_generator(model_config):
         model_g = MPRNet.MPRNet()
     elif generator_name == 'Uformer':
         model_g = Uformer.Uformer()
+    elif generator_name == 'Restormer':
+        model_g = Restormer.Restormer()
     else:
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
     return nn.DataParallel(model_g)
