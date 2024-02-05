@@ -346,14 +346,14 @@ class Inter_SA(nn.Module):
         query_v, key_v, value_v = feature_v[0], feature_v[1], feature_v[2]
 
         horizontal_groups = torch.cat((query_h, key_h, value_h), dim=0)
-        horizontal_groups = horizontal_groups.permute(0, 2, 1, 3).contiguous()
-        horizontal_groups = horizontal_groups.view(3*B, H, -1)
+        horizontal_groups = horizontal_groups.permute(0, 2, 1, 3).contiguous()  # b h c w
+        horizontal_groups = horizontal_groups.view(3*B, H, -1)  # b h (c w)
         horizontal_groups = torch.chunk(horizontal_groups, 3, dim=0)
         query_h, key_h, value_h = horizontal_groups[0], horizontal_groups[1], horizontal_groups[2]
 
         vertical_groups = torch.cat((query_v, key_v, value_v), dim=0)
-        vertical_groups = vertical_groups.permute(0, 3, 1, 2).contiguous()
-        vertical_groups = vertical_groups.view(3*B, W, -1)
+        vertical_groups = vertical_groups.permute(0, 3, 1, 2).contiguous()  # b w c h
+        vertical_groups = vertical_groups.view(3*B, W, -1)  # b w (c h)
         vertical_groups = torch.chunk(vertical_groups, 3, dim=0)
         query_v, key_v, value_v = vertical_groups[0], vertical_groups[1], vertical_groups[2]
 
