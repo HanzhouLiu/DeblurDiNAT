@@ -37,7 +37,6 @@ python train_DeblurDiNAT_gopro.py
 ## Testing
 For reproducing our results on GoPro and HIDE datasets, download "[DeblurDiNAT_gopro.pth](https://drive.google.com/drive/folders/1YcIwqlgWQw_dhy_h0fqZlnKGptq1eVjZ?usp=sharing)"
 
-For reproducing our results on RealBlur dataset, download "[DeblurDiNAT_realblur_J.pth](https://drive.google.com/drive/folders/1YcIwqlgWQw_dhy_h0fqZlnKGptq1eVjZ?usp=sharing)" and "[DeblurDiNAT_realblur_R.pth](https://drive.google.com/drive/folders/1YcIwqlgWQw_dhy_h0fqZlnKGptq1eVjZ?usp=sharing)"
 
 **For testing on GoPro dataset** </br>
 * Download "[GoPro](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" full dataset or test set into './datasets' (For example: './datasets/GoPro/test') </br>
