@@ -8,17 +8,18 @@ The implementation is modified from "[DeblurGANv2](https://github.com/VITA-Group
 ```
 git clone https://github.com/HanzhouLiu/DeblurDiNAT.git
 cd DeblurDiNAT
-conda create -n DeblurDiNAT python=3.6
+conda create -n DeblurDiNAT python=3.8
 source activate DeblurDiNAT
-conda install pytorch==1.8.0 torchvision==0.9.0 torchaudio==0.8.0 cudatoolkit=11.1 -c pytorch -c conda-forge
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 pip install opencv-python tqdm pyyaml joblib glog scikit-image tensorboardX albumentations
 pip install -U albumentations[imgaug]
 pip install albumentations==1.1.0
 ```
+The NATTEN package is required. 
 Please follow the NATTEN installation instructions.
-```
-https://shi-labs.com/natten/
-```
+Make sure Python, PyTorch, and CUDA versions are compatible with NATTEN.
+[NATTEN Homepage](https://shi-labs.com/natten/)
+
 ## Citation
 ```
 
