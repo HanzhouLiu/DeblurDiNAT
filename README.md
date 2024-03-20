@@ -1,7 +1,7 @@
 # DeblurDiNAT
 Pytorch Implementation of "[DeblurDiNAT: A Lightweight and Effective Transformer for Image Deblurring](https://arxiv.org/abs/...)" 
 
-<img src="./Figure/architecture.png" width = "800" height = "160" div align=center />
+<img src="./Figure/architecture.png" width = "800" height = "180" div align=center />
 
 ## Installation
 The implementation is modified from "[DeblurGANv2](https://github.com/VITA-Group/DeblurGANv2)"
