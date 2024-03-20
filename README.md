@@ -1,7 +1,7 @@
 # DeblurDiNAT
 Pytorch Implementation of "[DeblurDiNAT: A Lightweight and Effective Transformer for Image Deblurring](https://arxiv.org/abs/...)" 
 
-<img src="./Figure/architecture.png" width = "800" height = "180" div align=center />
+<img src="./Figure/architecture.png" width = "800" height = "343" div align=center />
 
 ## Installation
 The implementation is modified from "[DeblurGANv2](https://github.com/VITA-Group/DeblurGANv2)"
@@ -15,7 +15,10 @@ pip install opencv-python tqdm pyyaml joblib glog scikit-image tensorboardX albu
 pip install -U albumentations[imgaug]
 pip install albumentations==1.1.0
 ```
-
+Please follow the NATTEN installation instructions.
+```
+https://shi-labs.com/natten/
+```
 ## Citation
 ```
 
