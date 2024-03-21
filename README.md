@@ -1,10 +1,10 @@
 # DeblurDiNAT
-Pytorch Implementation of "[DeblurDiNAT: A Lightweight and Effective Transformer for Image Deblurring](https://arxiv.org/abs/...)" 
+Pytorch Implementation of "[DeblurDiNAT: A Lightweight and Effective Transformer for Image Deblurring](https://arxiv.org/abs/...)" .
 
 <img src="./Figure/architecture.png" width = "800" height = "343" div align=center />
 
 ## Installation
-The implementation is modified from "[DeblurGANv2](https://github.com/VITA-Group/DeblurGANv2)"
+The implementation is modified from "[DeblurGANv2](https://github.com/VITA-Group/DeblurGANv2)".
 ```
 git clone https://github.com/HanzhouLiu/DeblurDiNAT.git
 cd DeblurDiNAT
@@ -16,9 +16,50 @@ pip install -U albumentations[imgaug]
 pip install albumentations==1.1.0
 ```
 The NATTEN package is required. 
-Please follow the NATTEN installation instructions.
+Please follow the NATTEN installation instructions "[NATTEN Homepage](https://shi-labs.com/natten/)".
 Make sure Python, PyTorch, and CUDA versions are compatible with NATTEN.
-[NATTEN Homepage](https://shi-labs.com/natten/)
+
+## Training
+Download "[GoPro](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" dataset into './datasets' </br>
+For example: './datasets/GoPro'
+
+**We train our DeblurDiNAT in two stages:** </br>
+* We pre-train DeblurDiNAT for 3000 epochs with patch size 256x256 </br> 
+* Run the following command 
+```
+python train_DeblurDiNAT_pretrained.py
+```
+
+* After 3000 epochs, we keep training DeblurDiNAT for 1000 epochs with patch size 512x512 </br>
+* Run the following command 
+```
+python train_DeblurDiNAT_gopro.py
+```
+
+## Testing
+For reproducing our results on GoPro and HIDE datasets, download "[DeblurDiNATL.pth](https://drive.google.com/file/d/1hkZxPMqhAZTP-DS0S6FxM1ZWYkMIEL9b/view?usp=sharing)"
+
+**For testing on GoPro dataset** </br>
+* Download "[GoPro](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" full dataset or test set into './datasets' (For example: './datasets/GoPro/test') </br>
+* Run the following command
+```
+python predict_GoPro_test_results.py --weights_path ./DeblurDiNATL.pth 
+```
+**For testing on HIDE dataset** </br>
+* Download "[HIDE](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" into './datasets' </br>
+* Run the following command
+```
+python predict_HIDE_results.py --weights_path ./DeblurDiNATL.pth 
+```
+**For testing on RealBlur test sets** </br>
+* Download "[RealBlur_J](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" and "[RealBlur_R](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" into './datasets' </br>
+* Run the following command
+```
+python predict_RealBlur_J_test_results.py --weights_path ./DeblurDiNATL.pth 
+```
+```
+python predict_RealBlur_R_test_results.py --weights_path ./DeblurDiNATL.pth 
+```
 
 ## Citation
 ```
