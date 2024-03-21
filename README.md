@@ -64,5 +64,12 @@ python predict_RealBlur_R_test_results.py --weights_path ./DeblurDiNATL.pth
 
 ## Citation
 ```
-
+@misc{liu2024deblurdinat,
+      title={DeblurDiNAT: A Lightweight and Effective Transformer for Image Deblurring}, 
+      author={Hanzhou Liu and Binghan Li and Chengkai Liu and Mi Lu},
+      year={2024},
+      eprint={2403.13163},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
 ```
