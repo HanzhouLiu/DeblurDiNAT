@@ -1,1 +1,1 @@
-Put the DeblurDiNAT.pth here.
+Put the DeblurDiNATL.pth here.

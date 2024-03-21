@@ -44,7 +44,7 @@ For reproducing our results on GoPro and HIDE datasets, download "[DeblurDiNATL.
 * Download "[GoPro](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" full dataset or test set into './datasets' (For example: './datasets/GoPro/test') </br>
 * Run the following command
 ```
-python predict_GoPro_test_results.py --weights_path ./DeblurDiNATL.pth 
+python predict_GoPro_test_results.py --job_name DeblurDiNATL --weight_name DeblurDiNATL.pth --blur_path ./datasets/GOPRO/test/blur
 ```
 **For testing on HIDE dataset** </br>
 * Download "[HIDE](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" into './datasets' </br>
