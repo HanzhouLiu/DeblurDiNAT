@@ -1,9 +1,12 @@
-# DeblurDiNAT
+# DeblurDiNAT: A Lightweight and Effective Transformer for Image Deblurring
 <a href="https://arxiv.org/abs/2403.13163"><img src="https://img.shields.io/badge/arXiv-2403.13163-orange" /></a> </br>
+
+<b>Hanzhou Liu, <a href='https://www.linkedin.com/in/hanzhouliu/'>Binghan Li</a>, <a href='https://www.linkedin.com/in/binghanli/'>Chengkai Liu</a>, <a href='https://chengkai-liu.github.io/'>Wengang Zhou</a>, <a href='https://cesg.tamu.edu/faculty/mi-lu/'>
+
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/deblurdinat-a-lightweight-and-effective/deblurring-on-gopro)](https://paperswithcode.com/sota/deblurring-on-gopro?p=deblurdinat-a-lightweight-and-effective)
 
-This is the Pytorch Implementation of DeblurDiNAT, a lightweight, effective and robust Transformer for image deblurring.
+This is the Official Pytorch Implementation of DeblurDiNAT.
 
 <img src="./Figure/architecture.png" width = "800" height = "343" div align=center />
 
