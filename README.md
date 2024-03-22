@@ -19,7 +19,7 @@ This is the Official Pytorch Implementation of DeblurDiNAT.
 ## Visual Results
 | Blurry | DeblurDiNAT-L | FFTformer | Uformer-B | Stripformer | Restormer |
 | --- | --- | --- | --- | --- | --- |
-| <img src="Figure/books/blur.png" width="130"> | <img src="Figure/books/nadeblurL.png" width="130"> | <img src="Figure/books/fftformer.png" width="130"> | <img src="Figure/books/uformerb.png" width="130"> | <img src="Figure/books/stripformer.png" width="130"> | <img src="Figure/books/restormer.png" width="130"> |
+| <img src="Figure/books/blur.png" width="110"> | <img src="Figure/books/nadeblurL.png" width="110"> | <img src="Figure/books/fftformer.png" width="110"> | <img src="Figure/books/uformerb.png" width="110"> | <img src="Figure/books/stripformer.png" width="110"> | <img src="Figure/books/restormer.png" width="110"> |
 
 
 ## Installation
