@@ -1,5 +1,8 @@
 # DeblurDiNAT
 <a href="https://arxiv.org/abs/2403.13163"><img src="https://img.shields.io/badge/arXiv-2403.13163-orange" /></a> </br>
+
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/deblurdinat-a-lightweight-and-effective/deblurring-on-gopro)](https://paperswithcode.com/sota/deblurring-on-gopro?p=deblurdinat-a-lightweight-and-effective)
+
 This is the Pytorch Implementation of DeblurDiNAT, a lightweight, effective and robust Transformer for image deblurring.
 
 <img src="./Figure/architecture.png" width = "800" height = "343" div align=center />
