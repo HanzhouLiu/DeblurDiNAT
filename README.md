@@ -21,6 +21,8 @@ This is the Official Pytorch Implementation of DeblurDiNAT.
 | --- | --- | --- | --- | --- | --- |
 | <img src="Figure/books/blur.png" width="110"> | <img src="Figure/books/nadeblurL.png" width="110"> | <img src="Figure/books/fftformer.png" width="110"> | <img src="Figure/books/uformerb.png" width="110"> | <img src="Figure/books/stripformer.png" width="110"> | <img src="Figure/books/restormer.png" width="110"> |
 | <img src="Figure/starbucks/blur.png" width="110"> | <img src="Figure/starbucks/nadeblurL.png" width="110"> | <img src="Figure/starbucks/fftformer.png" width="110"> | <img src="Figure/starbucks/uformerb.png" width="110"> | <img src="Figure/starbucks/stripformer.png" width="110"> | <img src="Figure/starbucks/restormer.png" width="110"> |
+| <img src="Figure/pinkads/blur.png" width="110"> | <img src="Figure/pinkads/nadeblurL.png" width="110"> | <img src="Figure/pinkads/fftformer.png" width="110"> | <img src="Figure/pinkads/uformerb.png" width="110"> | <img src="Figure/pinkads/stripformer.png" width="110"> | <img src="Figure/pinkads/restormer.png" width="110"> |
+
 
 ## Installation
 The implementation is modified from "[DeblurGANv2](https://github.com/VITA-Group/DeblurGANv2)".
