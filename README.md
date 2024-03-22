@@ -7,6 +7,9 @@
 <a href='https://cesg.tamu.edu/faculty/mi-lu/'>Mi Lu</a>
 
 
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/deblurdinat-a-lightweight-and-effective/deblurring-on-realblur-j-trained-on-gopro)](https://paperswithcode.com/sota/deblurring-on-realblur-j-trained-on-gopro?p=deblurdinat-a-lightweight-and-effective)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/deblurdinat-a-lightweight-and-effective/deblurring-on-realblur-r-trained-on-gopro)](https://paperswithcode.com/sota/deblurring-on-realblur-r-trained-on-gopro?p=deblurdinat-a-lightweight-and-effective)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/deblurdinat-a-lightweight-and-effective/deblurring-on-hide-trained-on-gopro)](https://paperswithcode.com/sota/deblurring-on-hide-trained-on-gopro?p=deblurdinat-a-lightweight-and-effective)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/deblurdinat-a-lightweight-and-effective/deblurring-on-gopro)](https://paperswithcode.com/sota/deblurring-on-gopro?p=deblurdinat-a-lightweight-and-effective)
 
 This is the Official Pytorch Implementation of DeblurDiNAT.
