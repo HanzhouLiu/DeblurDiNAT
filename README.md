@@ -19,11 +19,11 @@ This is the Official Pytorch Implementation of DeblurDiNAT.
 ## Visual Results
 | Blurry                      | DeblurDiNAT-L               | FFTformer                   |
 |  ---                        |      ---                    |      ---                    |
-| ![](Figure/blur.gif)        | ![](Figure/nadeblur.gif)    | ![](Figure/fftformer.gif)   |
+| <img src="Figure/blur.gif" width="48">        | <img src="Figure/nadeblur.gif" width="48">    | <img src="Figure/fftformer.gif" width="48">   |
 
 | Uformer-B                   | Stripformer                 | Restormer                   |
 |  ---                        |      ---                    |      ---                    |
-| ![](Figure/uformerb.gif)    | ![](Figure/stripformer.gif) | ![](Figure/restormer.gif)   |
+| <img src="Figure/uformerb.gif" width="48">        | <img src="Figure/stripformer.gif" width="48">    | <img src="Figure/restormer.gif" width="48">   |
 
 ## Installation
 The implementation is modified from "[DeblurGANv2](https://github.com/VITA-Group/DeblurGANv2)".
