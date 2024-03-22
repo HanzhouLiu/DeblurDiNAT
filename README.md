@@ -17,12 +17,10 @@ This is the Official Pytorch Implementation of DeblurDiNAT.
 <img src="./Figure/architecture.png" width = "800" height = "343" div align=center />
 
 ## Visual Results
-| Blurry                      | DeblurDiNAT-L               | FFTformer                   |
-|  ---                        |      ---                    |      ---                    |
+| Blurry | DeblurDiNAT-L | FFTformer | Uformer-B | Stripformer | Restormer | MPRNet | MIMO-Unet+ | DeblurGAN-v2 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | <img src="Figure/books/blur.png" width="250"> | <img src="Figure/books/nadeblurL.png" width="250"> | <img src="Figure/books/fftformer.png" width="250"> | <img src="Figure/books/uformerb.png" width="250"> | <img src="Figure/books/stripformer.png" width="250"> | <img src="Figure/books/restormer.png" width="250"> | <img src="Figure/books/mprnet.png" width="250"> | <img src="Figure/books/mimonet.png" width="250"> | <img src="Figure/books/deblurGANv2.png" width="250"> |
 
-| Uformer-B                   | Stripformer                 | Restormer                   |
-|  ---                        |      ---                    |      ---                    |
 
 
 ## Installation
