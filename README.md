@@ -24,6 +24,10 @@ This is the Official Pytorch Implementation of DeblurDiNAT.
 | <img src="Figure/pinkads/blur.png" width="110"> | <img src="Figure/pinkads/nadeblurL.png" width="110"> | <img src="Figure/pinkads/fftformer.png" width="110"> | <img src="Figure/pinkads/uformerb.png" width="110"> | <img src="Figure/pinkads/stripformer.png" width="110"> | <img src="Figure/pinkads/restormer.png" width="110"> |
 | <img src="Figure/realj/blur.png" width="110"> | <img src="Figure/realj/nadeblurL.png" width="110"> | <img src="Figure/realj/fftformer.png" width="110"> | <img src="Figure/realj/uformerb.png" width="110"> | <img src="Figure/realj/stripformer.png" width="110"> | <img src="Figure/realj/restormer.png" width="110"> |
 
+## Quantitative Results
+<img src="Figure/table1.png" width = "800"  div align=center />
+<img src="Figure/table2.png" width = "800"  div align=center />
+
 ## Installation
 The implementation is modified from "[DeblurGANv2](https://github.com/VITA-Group/DeblurGANv2)".
 ```
