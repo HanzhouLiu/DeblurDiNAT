@@ -14,7 +14,7 @@
 
 This is the Official Pytorch Implementation of DeblurDiNAT.
 
-<img src="./Figure/architecture.png" width = "800" height = "343" div align=center />
+<img src="./Figure/architecture.png" width = "800" height = "400" div align=center />
 
 ## Update:
 * **2024.03.19** Release the initial version of codes for our DeblurDiNAT. 
