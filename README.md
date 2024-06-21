@@ -78,16 +78,16 @@ python predict_GoPro_test_results.py --job_name DeblurDiNATL --weight_name Deblu
 * Download "[HIDE](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" into './datasets' </br>
 * Run the following command
 ```
-python predict_HIDE_results.py --weights_path ./DeblurDiNATL.pth 
+python predict_HIDE_results.py --job_name DeblurDiNATL --weight_name DeblurDiNATL.pth --blur_path ./datasets/HIDE/test/blur
 ```
 **For testing on RealBlur test sets** </br>
 * Download "[RealBlur_J](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" and "[RealBlur_R](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" into './datasets' </br>
 * Run the following command
 ```
-python predict_RealBlur_J_test_results.py --weights_path ./DeblurDiNATL.pth 
+python predict_RealBlur_J_test_results.py --job_name DeblurDiNATL --weight_name DeblurDiNATL.pth --blur_path ./datasets/RealBlur_J/test/blur
 ```
 ```
-python predict_RealBlur_R_test_results.py --weights_path ./DeblurDiNATL.pth 
+python predict_RealBlur_R_test_results.py --job_name DeblurDiNATL --weight_name DeblurDiNATL.pth --blur_path ./datasets/RealBlur_R/test/blur
 ```
 
 ## Citation
