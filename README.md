@@ -53,13 +53,13 @@ Download "[GoPro](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR8
 For example: './datasets/GoPro'
 
 **We train our DeblurDiNAT in two stages:** </br>
-* We pre-train DeblurDiNAT for 3000 epochs with patch size 256x256 </br> 
+* We pre-train DeblurDiNAT for 4000 epochs with patch size 256x256 </br> 
 * Run the following command 
 ```
 python train_DeblurDiNAT_pretrained.py
 ```
 
-* After 3000 epochs, we keep training DeblurDiNAT for 1000 epochs with patch size 512x512 </br>
+* After 4000 epochs, we keep training DeblurDiNAT for 2000 epochs with patch size 512x512 </br>
 * Run the following command 
 ```
 python train_DeblurDiNAT_gopro.py
