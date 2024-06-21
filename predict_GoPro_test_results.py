@@ -70,7 +70,6 @@ if __name__ == '__main__':
 
                 start = time.time()
                 result_image = model(img_tensor)
-                result_image = result_image[:, :, :h, :w]
                 stop = time.time()
                 print('Image:{}/{}, CNN Runtime:{:.4f}'.format(iteration, total_image_number, (stop - start)))
                 test_time += stop - start
