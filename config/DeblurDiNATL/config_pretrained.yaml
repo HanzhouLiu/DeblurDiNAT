@@ -1,5 +1,5 @@
 ---
-experiment_desc: DeblurDiNAT_pretrained
+experiment_desc: NADeblur_pretrained
 
 train:
   files_a: /mnt/g/RESEARCH/PHD/Motion_Deblurred/datasets/GOPRO/train/trainA/*.png  # replace with your dataset path
@@ -25,7 +25,7 @@ model:
   g_name: DeblurDiNATL
   content_loss: Stripformer_Loss
 
-num_epochs: 3000
+num_epochs: 4000
 train_batches_per_epoch: 2103
 val_batches_per_epoch: 1111
 batch_size: 8

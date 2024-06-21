@@ -1,10 +1,10 @@
 ---
-experiment_desc: DeblurDiNAT_gopro
+experiment_desc: NADeblur_gopro
 
 train:
-  files_a: ./datasets/GoPro/train/blur/**/*.png  # replace with your dataset path
-  files_b: ./datasets/GoPro/train/sharp/**/*.png
-  size: &SIZE 512
+  files_a: /mnt/g/RESEARCH/PHD/Motion_Deblurred/datasets/GOPRO/train/trainA/*.png  # replace with your dataset path
+  files_b: /mnt/g/RESEARCH/PHD/Motion_Deblurred/datasets/GOPRO/train/trainB/*.png
+  size: &SIZE 512  # replace it with 496 if an OOM error raises
   crop: random
   preload: &PRELOAD false
   preload_size: &PRELOAD_SIZE 0
@@ -12,8 +12,8 @@ train:
   scope: geometric
 
 val:
-  files_a: ./datasets/GoPro/test/blur/**/*.png  # replace with your dataset path
-  files_b: ./datasets/GoPro/test/sharp/**/*.png
+  files_a: /mnt/g/RESEARCH/PHD/Motion_Deblurred/datasets/GOPRO/test/testA/*.png  # replace with your dataset path
+  files_b: /mnt/g/RESEARCH/PHD/Motion_Deblurred/datasets/GOPRO/test/testB/*.png
   size: *SIZE
   scope: None
   crop: random
@@ -25,11 +25,11 @@ model:
   g_name: DeblurDiNATL
   content_loss: Stripformer_Loss
 
-num_epochs: 1000
+num_epochs: 2000
 train_batches_per_epoch: 2103
 val_batches_per_epoch: 1111
 batch_size: 8
-image_size: [512, 512]
+image_size: [512, 512]  # replace it with 496 if an OOM error raises
 
 optimizer:
   name: adam
