@@ -82,7 +82,7 @@ class LGFF(nn.Module):
         super(LGFF, self).__init__()
         self.project_in = nn.Sequential(nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, groups=in_dim),
                                           nn.Conv2d(in_dim, out_dim, kernel_size=1))
-        self.norm = LayerNorm(out_dim, LayerNorm_type = 'BiasFree')
+        self.norm = LayerNorm(out_dim, LayerNorm_type = 'WithBias')
         self.ffn = GDFN(out_dim, ffn_expansion_factor, bias)
         
     def forward(self, x):
@@ -145,11 +145,11 @@ class TransBlock(nn.Module):
             self.dilation = dilation
             self.na2d = NeighborhoodAttention2D(dim=dim, kernel_size=kernel, 
                                                 dilation=dilation, num_heads=num_heads)
-            self.norm1 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
+            self.norm1 = LayerNorm(dim, LayerNorm_type = 'WithBias')
             self.pool = nn.AdaptiveAvgPool2d(1)
             self.conv = nn.Conv1d(1, 1, kernel_size=3, padding=1, bias=False)
             self.sigmoid = nn.Sigmoid()
-        self.norm2 = LayerNorm(dim, LayerNorm_type = 'BiasFree')
+        self.norm2 = LayerNorm(dim, LayerNorm_type = 'WithBias')
         self.ffn = DMFN(dim=dim, ffn_expansion_factor=ffn_expansion_factor, bias=bias)
         self.sa = sa
 
@@ -242,15 +242,15 @@ class Embeddings(nn.Module):
         return hx, residual_1, residual_2
 
 class Embeddings_output(nn.Module):
-    def __init__(self, dim, num_blocks, num_refinement_blocks, heads, bias):
+    def __init__(self, dim, num_blocks, kernel, heads, bias):
         super(Embeddings_output, self).__init__()
 
         self.activation = nn.LeakyReLU(0.2, True)
         
         self.de_trans_level3 = nn.Sequential(*[
             item for sublist in 
-            [[TransBlock(dim*2**2, heads[2], 7, 1, 1, bias=bias),
-             TransBlock(dim*2**2, heads[2], 7, 4, 1, bias=bias)] for i in range(num_blocks[2]//2)] for item in sublist
+            [[TransBlock(dim*2**2, heads[2], kernel, 1, 1, bias=bias),
+             TransBlock(dim*2**2, heads[2], kernel, 9, 1, bias=bias)] for i in range(num_blocks[2]//2)] for item in sublist
         ])
         
         self.up3_2 = nn.Sequential(
@@ -262,8 +262,8 @@ class Embeddings_output(nn.Module):
 
         self.de_trans_level2 = nn.Sequential(*[
             item for sublist in 
-            [[TransBlock(dim*2, heads[1], 7, 1, 1, bias=bias),
-             TransBlock(dim*2, heads[1], 7, 8, 1, bias=bias)] for i in range(num_blocks[1]//2)] for item in sublist
+            [[TransBlock(dim*2, heads[1], kernel, 1, 1, bias=bias),
+             TransBlock(dim*2, heads[1], kernel, 18, 1, bias=bias)] for i in range(num_blocks[1]//2)] for item in sublist
         ])
 
         self.up2_1 = nn.Sequential(
@@ -276,14 +276,14 @@ class Embeddings_output(nn.Module):
 
         self.de_trans_level1 = nn.Sequential(*[
             item for sublist in 
-            [[TransBlock(dim, heads[0], 7, 1, 1, bias=bias),
-             TransBlock(dim, heads[0], 7, 16, 1, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
+            [[TransBlock(dim, heads[0], kernel, 1, 1, bias=bias),
+             TransBlock(dim, heads[0], kernel, 36, 1, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
         ])
         
         self.refinement = nn.Sequential(*[
             item for sublist in 
-            [[TransBlock(dim, heads[0], 7, 1, 1, bias=bias),
-             TransBlock(dim, heads[0], 7, 16, 1, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
+            [[TransBlock(dim, heads[0], kernel, 1, 1, bias=bias),
+             TransBlock(dim, heads[0], kernel, 36, 1, bias=bias)] for i in range(num_blocks[0]//2)] for item in sublist
         ])
         self.output = nn.Sequential(
             nn.Conv2d(dim, 3, kernel_size=3, padding=1, bias=bias),
@@ -303,24 +303,22 @@ class Embeddings_output(nn.Module):
         return hx
 
 
-class NADeblur(nn.Module):
+class NADeblurMini(nn.Module):
     def __init__(self,
                  dim = 64, 
                  num_blocks = [4,6,8],
-                 num_refinement_blocks = 4,
                  num_heads = [2,4,8], 
                  kernel = 7, 
-                 dilation = 3, 
                  ffn_expansion_factor = 1, 
                  bias = False):
-        super(NADeblur, self).__init__()
+        super(NADeblurMini, self).__init__()
         
         self.encoder = Embeddings(dim)
 
         self.multi_scale_fusion_level1 = LGFF(dim*7, dim*1, ffn_expansion_factor, bias)
         self.multi_scale_fusion_level2 = LGFF(dim*7, dim*2, ffn_expansion_factor, bias)
     
-        self.decoder = Embeddings_output(dim, num_blocks, num_refinement_blocks, 
+        self.decoder = Embeddings_output(dim, num_blocks, kernel, 
                                          num_heads, bias)
 
 
@@ -339,4 +337,3 @@ class NADeblur(nn.Module):
         hx = self.decoder(hx, res1, res2)
 
         return hx + x
-    
