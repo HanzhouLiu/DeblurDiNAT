@@ -66,7 +66,7 @@ python train_DeblurDiNAT_gopro.py
 ```
 
 ## Testing
-For reproducing our results on GoPro and HIDE datasets, download "[DeblurDiNATL.pth](https://drive.google.com/file/d/1hkZxPMqhAZTP-DS0S6FxM1ZWYkMIEL9b/view?usp=sharing)"
+For reproducing our results on GoPro and HIDE datasets, download "[DeblurDiNATL.pth](https://drive.google.com/file/d/11TjEWqBjScuekky4Y3OW51dKVyxnqMfQ/view?usp=drive_link)"
 
 **For testing on GoPro dataset** </br>
 * Download "[GoPro](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" full dataset or test set into './datasets' (For example: './datasets/GoPro/test') </br>
