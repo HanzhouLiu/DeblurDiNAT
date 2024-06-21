@@ -16,6 +16,10 @@ This is the Official Pytorch Implementation of DeblurDiNAT.
 
 <img src="./Figure/architecture.png" width = "800" height = "343" div align=center />
 
+## Update:
+* **2024.03.19** Release the initial version of codes for our DeblurDiNAT. 
+* **2024.06.21** Improve the PSNR/SSIM scores and release the second version of codes for our DeblurDiNAT. 
+
 ## Visual Results
 | Blurry | DeblurDiNAT-L | FFTformer | Uformer-B | Stripformer | Restormer |
 | --- | --- | --- | --- | --- | --- |
