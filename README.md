@@ -19,7 +19,7 @@ This is the Official Pytorch Implementation of DeblurDiNAT.
 ## Update:
 * **2024.03.19** Release the initial version of codes for our DeblurDiNAT. 
 * **2024.06.21** Improve the PSNR/SSIM scores and release the second version of codes for our DeblurDiNAT. 
-* **2024.06.25** The updated preprint paper is available. 
+* **2024.06.24** The updated preprint paper is available. 
 
 ## Visual Results
 | Blurry | DeblurDiNAT-L | FFTformer | Uformer-B | Stripformer | Restormer |
@@ -53,6 +53,9 @@ Make sure Python, PyTorch, and CUDA versions are compatible with NATTEN.
 Download "[GoPro](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" dataset into './datasets' </br>
 For example: './datasets/GoPro'
 
+Download "[VGG19 Pretrained Weights](https://drive.google.com/file/d/1r2_clZ02-ai6xM7EOHW9APqY9IxkPYsS/view?usp=drive_link)" into './models',
+which is used to calculate ContrastLoss  </br>
+
 **We train our DeblurDiNAT in two stages:** </br>
 * We pre-train DeblurDiNAT for 4000 epochs with patch size 256x256 </br> 
 * Run the following command 
@@ -67,13 +70,13 @@ python train_DeblurDiNAT_gopro.py
 ```
 
 ## Testing
-For reproducing our results on GoPro and HIDE datasets, download "[DeblurDiNATL.pth](https://drive.google.com/file/d/11TjEWqBjScuekky4Y3OW51dKVyxnqMfQ/view?usp=drive_link)"
+For reproducing our results on GoPro and HIDE datasets, download "[DeblurDiNATL.pth](https://drive.google.com/file/d/1VT7dpP550b83YZ0LjfmGA5t0nEA32EEs/view?usp=sharing)"
 
 **For testing on GoPro dataset** </br>
 * Download "[GoPro](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" full dataset or test set into './datasets' (For example: './datasets/GoPro/test') </br>
 * Run the following command
 ```
-python predict_GoPro_test_results.py --job_name DeblurDiNATL --weight_name DeblurDiNATL.pth --blur_path ./datasets/GOPRO/test/blur
+python predict_GoPro_test_results.py --job_name DeblurDiNATL --weight_name DeblurDiNATL.pth --blur_path ./datasets/GOPRO/test/testA
 ```
 **For testing on HIDE dataset** </br>
 * Download "[HIDE](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" into './datasets' </br>
