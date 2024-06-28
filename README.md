@@ -50,11 +50,11 @@ Please follow the NATTEN installation instructions "[NATTEN Homepage](https://sh
 Make sure Python, PyTorch, and CUDA versions are compatible with NATTEN.
 
 ## Training
-Download "[GoPro](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" dataset into './datasets' </br>
-For example: './datasets/GoPro'
+Download "[GoPro](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" dataset into './datasets'
+for example: './datasets/GoPro'. Note: we say the blur images is A and the sharp images is B, e.g., ./GOPRO/test/sharp <-> .GOPRO/test/testB. </br>
 
 Download "[VGG19 Pretrained Weights](https://drive.google.com/file/d/1r2_clZ02-ai6xM7EOHW9APqY9IxkPYsS/view?usp=drive_link)" into './models',
-which is used to calculate ContrastLoss  </br>
+which is used to calculate ContrastLoss.  </br>
 
 **We train our DeblurDiNAT in two stages:** </br>
 * We pre-train DeblurDiNAT for 4000 epochs with patch size 256x256 </br> 
