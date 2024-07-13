@@ -20,6 +20,7 @@ This is the Official Pytorch Implementation of DeblurDiNAT.
 * **2024.03.19** Release the initial version of codes for our DeblurDiNAT. 
 * **2024.06.21** Improve the PSNR/SSIM scores and release the second version of codes for our DeblurDiNAT. 
 * **2024.06.24** The updated preprint paper is available. 
+* **2024.07.12** The updated preprint paper is available. 
 
 ## Visual Results
 | Blurry | DeblurDiNAT-L | FFTformer | Uformer-B | Stripformer | Restormer |
@@ -30,8 +31,8 @@ This is the Official Pytorch Implementation of DeblurDiNAT.
 | <img src="Figure/realj/blur.png" width="110"> | <img src="Figure/realj/nadeblurL.png" width="110"> | <img src="Figure/realj/fftformer.png" width="110"> | <img src="Figure/realj/uformerb.png" width="110"> | <img src="Figure/realj/stripformer.png" width="110"> | <img src="Figure/realj/restormer.png" width="110"> |
 
 ## Quantitative Results
-<img src="Figure/table1.png" width = "800"  div align=center />
-<img src="Figure/table2.png" width = "800"  div align=center />
+<img src="Figure/table.png" width = "800"  div align=center />
+<img src="Figure/sota.png" width = "800"  div align=center />
 
 ## Installation
 The implementation is modified from "[DeblurGANv2](https://github.com/VITA-Group/DeblurGANv2)".
