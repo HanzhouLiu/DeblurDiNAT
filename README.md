@@ -1,4 +1,4 @@
-# DeblurDiNAT: A Lightweight and Effective Transformer for Image Deblurring
+# DeblurDiNAT: A Generalizable Transformer for Perceptual Image Deblurring
 <a href="https://arxiv.org/abs/2403.13163"><img src="https://img.shields.io/badge/arXiv-2403.13163-orange" /></a> </br>
 
 <a href='https://www.linkedin.com/in/hanzhouliu/'>Hanzhou Liu</a>, 
