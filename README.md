@@ -14,7 +14,9 @@
 
 This is the Official Pytorch Implementation of DeblurDiNAT.
 
-<img src="./Figure/architecture.png" width = "800" height = "400" div align=center />
+<img src="Figure/sota.png" width = "800"  div align=center />
+
+<img src="./Figure/architecture.png" width = "800" height = "500" div align=center />
 
 ## Update:
 * **2024.03.19** Release the initial version of codes for our DeblurDiNAT. 
@@ -32,7 +34,6 @@ This is the Official Pytorch Implementation of DeblurDiNAT.
 
 ## Quantitative Results
 <img src="Figure/table.png" width = "800"  div align=center />
-<img src="Figure/sota.png" width = "800"  div align=center />
 
 ## Installation
 The implementation is modified from "[DeblurGANv2](https://github.com/VITA-Group/DeblurGANv2)".
