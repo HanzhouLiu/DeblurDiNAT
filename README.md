@@ -41,8 +41,8 @@ The implementation is modified from "[DeblurGANv2](https://github.com/VITA-Group
 git clone https://github.com/HanzhouLiu/DeblurDiNAT.git
 cd DeblurDiNAT
 conda create -n DeblurDiNAT python=3.8
-source activate DeblurDiNAT
-conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+conda activate DeblurDiNAT
+conda install pytorch==2.3.0 torchvision==0.18.0 pytorch-cuda=11.8 -c pytorch -c nvidia
 pip install opencv-python tqdm pyyaml joblib glog scikit-image tensorboardX albumentations
 pip install -U albumentations[imgaug]
 pip install albumentations==1.1.0
