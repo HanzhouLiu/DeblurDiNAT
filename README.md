@@ -43,7 +43,7 @@ cd DeblurDiNAT
 conda create -n DeblurDiNAT python=3.8
 conda activate DeblurDiNAT
 conda install pytorch==2.3.0 torchvision==0.18.0 pytorch-cuda=11.8 -c pytorch -c nvidia
-pip install opencv-python tqdm pyyaml joblib glog scikit-image tensorboardX albumentations
+pip install opencv-python tqdm pyyaml joblib glog scikit-image tensorboardX albumentations einops
 pip install -U albumentations[imgaug]
 pip install albumentations==1.1.0
 ```
