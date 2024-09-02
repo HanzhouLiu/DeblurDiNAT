@@ -30,7 +30,8 @@ if __name__ == '__main__':
     if not os.path.isdir(out_path):
         os.mkdir(out_path)
     model = get_generator(config['model'])
-    model.load_state_dict(torch.load(args.weights_path))
+    weights_path = os.path.join('results', args.job_name, 'models', args.weight_name)
+    model.load_state_dict(torch.load(weights_path))
     model = model.cuda()
     test_time = 0
     iteration = 0
