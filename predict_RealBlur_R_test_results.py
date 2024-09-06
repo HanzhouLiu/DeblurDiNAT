@@ -28,7 +28,8 @@ if __name__ == '__main__':
     blur_path = args.blur_path
     out_path = os.path.join('results', args.job_name, 'images_realr')
     model = get_generator(config['model'])
-    model.load_state_dict(torch.load(args.weights_path))
+    weights_path = os.path.join('results', args.job_name, 'models', args.weight_name)
+    model.load_state_dict(torch.load(weights_path))
     model = model.cuda()
     if not os.path.isdir(out_path):
         os.mkdir(out_path)
