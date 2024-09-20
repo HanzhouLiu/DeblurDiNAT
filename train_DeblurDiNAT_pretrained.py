@@ -42,7 +42,7 @@ class Trainer:
         if os.path.exists(os.path.join(model_dir, 'last_NADeblur_pretrained.pth')):
             print('load_pretrained')
             training_state = (torch.load(os.path.join(model_dir, 'last_NADeblur_pretrained.pth')))
-            start_epoch = training_state['epoch']
+            start_epoch = training_state['epoch'] + 1
             new_weight = self.netG.state_dict()
             new_weight.update(training_state['model_state'])
             self.netG.load_state_dict(new_weight)
