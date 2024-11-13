@@ -47,6 +47,7 @@ pip install timm opencv-python tqdm pyyaml joblib glog scikit-image tensorboardX
 pip install -U albumentations[imgaug]
 pip install albumentations==1.1.0
 pip3 install natten==0.14.6+torch200cu118 -f https://shi-labs.com/natten/wheels
+pip install "numpy<2"
 ```
 The Older Releases of NATTEN package is required. 
 Please follow the NATTEN installation instructions "[NATTEN Homepage](https://shi-labs.com/natten/)".
