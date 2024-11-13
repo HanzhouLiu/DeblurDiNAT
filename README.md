@@ -42,14 +42,16 @@ git clone https://github.com/HanzhouLiu/DeblurDiNAT.git
 cd DeblurDiNAT
 conda create -n DeblurDiNAT python=3.8
 conda activate DeblurDiNAT
-conda install pytorch==2.3.0 torchvision==0.18.0 pytorch-cuda=11.8 -c pytorch -c nvidia
-pip install opencv-python tqdm pyyaml joblib glog scikit-image tensorboardX albumentations einops
+conda install pytorch==2.0.0 torchvision==0.15.0 pytorch-cuda=11.8 -c pytorch -c nvidia
+pip install timm opencv-python tqdm pyyaml joblib glog scikit-image tensorboardX albumentations einops
 pip install -U albumentations[imgaug]
 pip install albumentations==1.1.0
+pip3 install natten==0.14.6+torch200cu118 -f https://shi-labs.com/natten/wheels
 ```
-The NATTEN package is required. 
+The Older Releases of NATTEN package is required. 
 Please follow the NATTEN installation instructions "[NATTEN Homepage](https://shi-labs.com/natten/)".
 Make sure Python, PyTorch, and CUDA versions are compatible with NATTEN.
+If you installed the latest version, you may meet the unexpected key issue when loading pre-trained weights.
 
 ## Training
 Download "[GoPro](https://drive.google.com/drive/folders/1BdV2l7A5MRXLWszGonMxR88eV27geb_n?usp=sharing)" dataset into './datasets'
