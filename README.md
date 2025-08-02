@@ -23,6 +23,8 @@ This is the Official Pytorch Implementation of DeblurDiNAT.
 * **2024.06.21** Improve the PSNR/SSIM scores and release the second version of codes for our DeblurDiNAT. 
 * **2024.06.24** The updated preprint paper is available. 
 * **2024.07.12** The updated preprint paper is available. 
+* **2025.08.02** Extension work [DiNAT-IR](https://arxiv.org/abs/2507.17892), paper is available on arxiv.
+* **2025.08.02** Extension work [DiNAT-IR](https://github.com/HanzhouLiu/DiNAT-IR), code has been released.
 
 ## Visual Results
 | Blurry | DeblurDiNAT-L | FFTformer | Uformer-B | Stripformer | Restormer |
